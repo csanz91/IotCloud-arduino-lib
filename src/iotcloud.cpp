@@ -1,0 +1,98 @@
+#include <Arduino.h>
+#include "iotcloud.h"
+
+#define DEBUG
+
+const int RESET_PIN = 0;
+const unsigned int RESET_PRESS_TIME = 5000; // milliseconds
+
+int lastState = HIGH;
+int currentState;
+unsigned long releasedTime = 0;
+
+bool runtime_mode = false;
+
+void iotcloud_setup(Device *device)
+{
+    // Make sure the device passed is correct
+    assert(device);
+
+    IotCloud_Constants::setup_constants();
+
+    // Set up the reset button pin
+    pinMode(RESET_PIN, INPUT);
+
+    // Get the device data saved
+    device_data data = get_data();
+    // If the saved data is valid, activate the runtime mode
+    runtime_mode = validate_device_data(&data);
+#ifdef DEBUG
+    pretty_print_data(&data);
+#endif
+
+    if (runtime_mode)
+    {
+        Serial.println("Starting runtime mode setup");
+        runtime_mode_setup(&data, device);
+    }
+    else
+    {
+        Serial.println("Starting setup mode setup");
+        setup_mode_setup(device);
+    }
+}
+
+#ifdef DEBUG
+unsigned int lastDebugMessage = millis();
+#endif
+
+void iotcloud_loop(void)
+{
+    if (runtime_mode)
+    {
+        runtime_mode_loop();
+    }
+    else
+    {
+        setup_mode_loop();
+    }
+    detect_reset_request();
+
+#ifdef DEBUG
+    unsigned int elapsed = millis() - lastDebugMessage;
+    if (elapsed > 60000)
+    {
+        Serial.print("Heap fragmentation: ");
+        Serial.println(ESP.getHeapFragmentation());
+        Serial.print("Heap free: ");
+        Serial.println(ESP.getFreeHeap());
+        Serial.println();
+
+        lastDebugMessage = millis();
+    }
+
+#endif
+}
+
+void detect_reset_request()
+{
+    currentState = digitalRead(RESET_PIN);
+
+    if (lastState == HIGH && currentState == LOW) // button is pressed
+        releasedTime = millis();
+    else if (currentState == HIGH) // button is not pressed
+        releasedTime = millis();
+
+    long pressDuration = millis() - releasedTime;
+
+    if (pressDuration > RESET_PRESS_TIME)
+    {
+        Serial.println("Resetting device...");
+        clear_saved_data();
+        Serial.println("Restarting device...");
+        ESP.restart();
+    }
+
+    // save the the last state
+    lastState = currentState;
+}
