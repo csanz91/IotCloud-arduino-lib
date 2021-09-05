@@ -13,9 +13,7 @@ BaseSensor::BaseSensor(
                            _metadata(metadata),
                            version(version)
 {
-    //assert(strlen(_sensor_id) < sizeof(DEVICE_INTERNAL_ID) + sizeof(sensor_id) + 1);
-
-    strcat(_sensor_id, IotCloud_Constants::DEVICE_INTERNAL_ID);
+    strcpy(_sensor_id, IotCloud_Constants::DEVICE_INTERNAL_ID);
     strcat(_sensor_id, "_");
     strcat(_sensor_id, sensor_id);
 }
