@@ -7,13 +7,15 @@ AnalogSensor::AnalogSensor(
     const unsigned short decimals,
     const bool enable_filter,
     const char *sensor_type,
-    const char *metadata) : BaseSensor(sensor_id,
-                                       sensor_name,
-                                       sensor_type,
-                                       metadata),
-                            _report_value_period(report_value_period),
-                            _decimals(decimals),
-                            _enable_filter(enable_filter)
+    const char *metadata,
+    const float filter_rate_change) : BaseSensor(sensor_id,
+                                                 sensor_name,
+                                                 sensor_type,
+                                                 metadata),
+                                      _report_value_period(report_value_period),
+                                      _decimals(decimals),
+                                      _enable_filter(enable_filter),
+                                      _filter_rate_change(filter_rate_change)
 {
     _lastTask = 0;
 }
@@ -33,7 +35,7 @@ void AnalogSensor::get_value()
 float AnalogSensor::filter_value(float new_value)
 {
     // Check forbiden values
-    if (isnan(new_value) || isinf(new_value) || new_value == -1.0)
+    if (isnan(new_value) || isinf(new_value))
         return NULL;
 
     if (!_enable_filter)
@@ -53,7 +55,7 @@ float AnalogSensor::filter_value(float new_value)
     running_avg_value /= _next_running_avg;
 
     // Calculate the maximum allowed rate of change
-    float avg_tolerance = running_avg_value * 0.1; // 10%
+    float avg_tolerance = running_avg_value * _filter_rate_change;
 
     // Check if the value is within the tolerances
     if (new_value < running_avg_value - avg_tolerance || new_value > running_avg_value + avg_tolerance)

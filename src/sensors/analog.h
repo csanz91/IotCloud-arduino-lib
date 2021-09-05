@@ -13,6 +13,7 @@ private:
     int _next_running_avg;
     bool _enable_filter;
     const unsigned int _report_value_period;
+    const float _filter_rate_change;
 
 protected:
     float value;
@@ -30,7 +31,8 @@ public:
         const unsigned short decimals = 2,
         const bool enable_filter = true,
         const char *sensor_type = "analog",
-        const char *metadata = "{}");
+        const char *metadata = "{}",
+        const float filter_rate_change = 0.1);
 
     void loop();
 };
