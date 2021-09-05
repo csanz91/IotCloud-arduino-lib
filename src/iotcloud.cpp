@@ -33,8 +33,7 @@ void iotcloud_setup(Device *device)
     }
     else
     {
-        Serial.println("Starting setup mode setup");
-        setup_mode_setup(device);
+        config_mode_setup(device);
     }
 }
 
@@ -50,7 +49,7 @@ void iotcloud_loop(void)
     }
     else
     {
-        setup_mode_loop();
+        config_mode_loop();
     }
     detect_reset_request();
 

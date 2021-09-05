@@ -11,7 +11,7 @@
 
 #define LED_PIN_PERIOD 1000U // milliseconds
 
-extern void setup_mode_setup(Device *device);
-extern void setup_mode_loop();
+extern void config_mode_setup(Device *device);
+extern void config_mode_loop();
 
 #endif // _IOTCLOUD_SETUP_MODE

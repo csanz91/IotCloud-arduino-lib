@@ -1,7 +1,7 @@
 
 #include "setup_mode.h"
 
-void setup_mode_setup(Device *device)
+void config_mode_setup(Device *device)
 {
     Serial.println("Setup mode started...");
 
@@ -15,7 +15,7 @@ void setup_mode_setup(Device *device)
     web_server_setup(device);
 }
 
-void setup_mode_loop()
+void config_mode_loop()
 {
     // Flash the LED when in config mode
     digitalWrite(LED_BUILTIN, millis() / LED_PIN_PERIOD % 2);
