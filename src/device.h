@@ -6,6 +6,7 @@
 #include "EspMQTTClient.h"
 
 #include "sensors/sensor.h"
+#include "device_data.h"
 #include "iotcloud_constants.h"
 
 class Device

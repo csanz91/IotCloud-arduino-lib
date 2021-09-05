@@ -26,6 +26,16 @@ void Device::init(EspMQTTClient *mqtt_client)
     get_topic(topic, "version");
     mqtt_client->publish(topic, device_current_version, true);
 
+    get_topic(topic, "reset");
+    mqtt_client->subscribe(topic, [&](const String &payload) {
+        if (payload.equalsIgnoreCase("true"))
+        {
+            Serial.println(F("Reseting the device..."));
+            clear_saved_data();
+            ESP.restart();
+        }
+    });
+
     for (const auto &sensor : _sensors)
     {
         sensor->init(mqtt_header, mqtt_client);
