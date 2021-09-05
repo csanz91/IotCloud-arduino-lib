@@ -3,10 +3,6 @@
 
 #define DEBUG
 
-const int RESET_PIN = 0;
-const unsigned int RESET_PRESS_TIME = 5000; // milliseconds
-
-int lastState = HIGH;
 int currentState;
 unsigned long releasedTime = 0;
 
@@ -78,21 +74,17 @@ void detect_reset_request()
 {
     currentState = digitalRead(RESET_PIN);
 
-    if (lastState == HIGH && currentState == LOW) // button is pressed
-        releasedTime = millis();
-    else if (currentState == HIGH) // button is not pressed
+    if (currentState == HIGH) // button is not pressed
         releasedTime = millis();
 
     long pressDuration = millis() - releasedTime;
 
     if (pressDuration > RESET_PRESS_TIME)
     {
-        Serial.println("Resetting device...");
+        Serial.println(F("Resetting device..."));
         clear_saved_data();
-        Serial.println("Restarting device...");
+        Serial.println(F("Restarting device..."));
         ESP.restart();
     }
 
-    // save the the last state
-    lastState = currentState;
 }
