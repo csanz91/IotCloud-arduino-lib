@@ -51,7 +51,7 @@ namespace OTA
         char topic[strlen(_mqtt_ota_header) + 11];
         strcpy(topic, _mqtt_ota_header);
         strcat(topic, "ota/status");
-        _mqtt_client->publish(topic, payload, true);
+        _mqtt_client->publish(topic, payload);
     }
 
     void _start_update()
