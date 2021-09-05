@@ -28,11 +28,12 @@ void iotcloud_setup(Device *device)
 
     if (runtime_mode)
     {
-        Serial.println("Starting runtime mode setup");
+        Serial.println(F("Starting runtime mode setup"));
         runtime_mode_setup(&data, device);
     }
     else
     {
+        Serial.println(F("Starting config mode setup"));
         config_mode_setup(device);
     }
 }
@@ -57,9 +58,9 @@ void iotcloud_loop(void)
     unsigned int elapsed = millis() - lastDebugMessage;
     if (elapsed > 60000)
     {
-        Serial.print("Heap fragmentation: ");
+        Serial.print(F("Heap fragmentation: "));
         Serial.println(ESP.getHeapFragmentation());
-        Serial.print("Heap free: ");
+        Serial.print(F("Heap free: "));
         Serial.println(ESP.getFreeHeap());
         Serial.println();
 
