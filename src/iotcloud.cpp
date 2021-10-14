@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include "iotcloud.h"
 
-#define DEBUG
+//#define DEBUG
 
 int currentState;
 unsigned long releasedTime = 0;
