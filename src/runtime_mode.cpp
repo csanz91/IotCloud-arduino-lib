@@ -25,8 +25,9 @@ void runtime_mode_setup(const device_data *received_data, Device *d)
 
     mqtt_client->setMaxPacketSize(1024);
 
-    // Optionnal functionnalities of EspMQTTClient :
+#ifdef DEBUG
     mqtt_client->enableDebuggingMessages();
+#endif
     mqtt_client->enableLastWillMessage(_device->mqtt_status_topic, "offline", true);
 }
 
