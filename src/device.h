@@ -1,7 +1,11 @@
 #ifndef _IOTCLOUD_DEVICE
 #define _IOTCLOUD_DEVICE
 
-#include "ESP8266httpUpdate.h"
+#ifdef ESP8266
+    #include "ESP8266httpUpdate.h"
+#elif defined(ESP32)
+    #include <HTTPUpdate.h>
+#endif
 
 #include "EspMQTTClient.h"
 

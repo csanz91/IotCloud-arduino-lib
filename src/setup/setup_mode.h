@@ -2,8 +2,13 @@
 #define _IOTCLOUD_SETUP_MODE
 
 #include <Arduino.h>
-#include <WiFiClient.h>
-#include <ESP8266WiFi.h>
+#ifdef ESP8266
+    #include <WiFiClient.h>
+    #include <ESP8266WiFi.h>
+#elif defined(ESP32)
+    #include <HTTPClient.h>
+    #include <WiFi.h>
+#endif
 
 #include "../iotcloud_constants.h"
 #include "web_server.h"

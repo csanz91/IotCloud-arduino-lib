@@ -1,9 +1,13 @@
 #include "web_server.h"
 
-ESP8266WebServer server(80);
 Device *device;
-
-#define DEBUG
+#ifdef ESP8266
+#include <ESP8266WebServer.h>
+ESP8266WebServer server(80);
+#elif defined(ESP32)
+#include <WebServer.h>
+WebServer server(80);
+#endif
 
 unsigned long setupTime = 0;
 

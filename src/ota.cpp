@@ -22,24 +22,29 @@ namespace OTA
         _current_version = current_version;
         _device_model = device_model;
 
+#ifdef ESP8266
         ESPhttpUpdate.rebootOnUpdate(false);
+#elif defined(ESP32)
+        httpUpdate.rebootOnUpdate(false);
+#endif
 
         char constructedTopic[64] = "v1/ota/update/";
         strcat(constructedTopic, _device_model);
-        mqtt_client->subscribe(constructedTopic, [&](const String &payload) {
-            Serial.println("New ota update request received");
-            if (strlcpy(_new_version, payload.c_str(), sizeof _new_version) >= sizeof _new_version)
-            {
-                _publishOtaStatus(400, "Version lenght too big");
-                return;
-            }
+        mqtt_client->subscribe(constructedTopic, [&](const String &payload)
+                               {
+                                   Serial.println("New ota update request received");
+                                   if (strlcpy(_new_version, payload.c_str(), sizeof _new_version) >= sizeof _new_version)
+                                   {
+                                       _publishOtaStatus(400, "Version lenght too big");
+                                       return;
+                                   }
 
-            Serial.println(_new_version);
-            _ota_requested = true;
-        });
+                                   Serial.println(_new_version);
+                                   _ota_requested = true;
+                               });
     }
 
-    bool _publishOtaStatus(int status, const char *info)
+    void _publishOtaStatus(int status, const char *info)
     {
         char payload[90] = "";
         itoa(status, payload, 10);
@@ -65,10 +70,14 @@ namespace OTA
             return;
         }
 
-        X509List cert(LETSENCRYPT_ROOT_CA);
-
         WiFiClientSecure client;
+#ifdef ESP8266
+        X509List cert(LETSENCRYPT_ROOT_CA);
         client.setTrustAnchors(&cert);
+#elif defined(ESP32)
+        client.setCACert(LETSENCRYPT_ROOT_CA);
+#endif
+        client.setTimeout(5000);
         if (!client.connect(IotCloud_Constants::OTA_SERVER, 443))
         {
             _publishOtaStatus(400, "Connection failed");
@@ -83,15 +92,24 @@ namespace OTA
         strcat(url, "/");
         strcat(url, _new_version);
 
+#ifdef ESP8266
         ESPhttpUpdate.setLedPin(LED_BUILTIN, LOW);
-
         t_httpUpdate_return ret = ESPhttpUpdate.update(client, url);
+#elif defined(ESP32)
+        httpUpdate.setLedPin(LED_BUILTIN, LOW);
+        t_httpUpdate_return ret = httpUpdate.update(client, url);
+#endif
 
         char error_msg[80];
         switch (ret)
         {
         case HTTP_UPDATE_FAILED:
+#ifdef ESP8266
             sprintf(error_msg, "HTTP_UPDATE_FAILED Error (%d): %s\n", ESPhttpUpdate.getLastError(), ESPhttpUpdate.getLastErrorString().c_str());
+
+#elif defined(ESP32)
+            sprintf(error_msg, "HTTP_UPDATE_FAILED Error (%d): %s\n", httpUpdate.getLastError(), httpUpdate.getLastErrorString().c_str());
+#endif
             Serial.println(error_msg);
             _publishOtaStatus(400, error_msg);
             break;
