@@ -26,6 +26,9 @@ void Device::init(EspMQTTClient *mqtt_client)
     get_topic(topic, "version");
     mqtt_client->publish(topic, device_current_version, true);
 
+    get_topic(topic, "model");
+    mqtt_client->publish(topic, device_model, true);
+
     get_topic(topic, "reset");
     mqtt_client->subscribe(topic, [&](const String &payload) {
         if (payload.equalsIgnoreCase("true"))
