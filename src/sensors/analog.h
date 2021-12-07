@@ -10,7 +10,8 @@ private:
     unsigned int _lastTask;
     static const int _running_avg_count = 10;
     float _running_avg_buffer[_running_avg_count];
-    int _next_running_avg;
+    int _next_running_avg = 0;
+    int _elements_in_buffer = 0;
     bool _enable_filter;
     const unsigned int _report_value_period;
     const float _filter_rate_change;

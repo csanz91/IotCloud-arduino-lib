@@ -22,6 +22,9 @@ AnalogSensor::AnalogSensor(
 
 void AnalogSensor::report_value()
 {
+    // Make sure the client has been initialized
+    if (!_mqtt_client)
+        return;
     char constructedTopic[94] = "";
     construct_topic(constructedTopic, "value");
     char array[12];
@@ -47,16 +50,19 @@ float AnalogSensor::filter_value(float new_value)
     {
         _next_running_avg = 0;
     }
+    if (_elements_in_buffer < _running_avg_count)
+    {
+        _elements_in_buffer++;
+    }
     float running_avg_value = 0;
-    for (int i = 0; i < _next_running_avg; ++i)
+    for (int i = 0; i < _elements_in_buffer; ++i)
     {
         running_avg_value += _running_avg_buffer[i];
     }
-    running_avg_value /= _next_running_avg;
-
+    running_avg_value /= _elements_in_buffer;
     // Calculate the maximum allowed rate of change
     float avg_tolerance = running_avg_value * _filter_rate_change;
-
+    
     // Check if the value is within the tolerances
     if (new_value < running_avg_value - avg_tolerance || new_value > running_avg_value + avg_tolerance)
         return NULL;
