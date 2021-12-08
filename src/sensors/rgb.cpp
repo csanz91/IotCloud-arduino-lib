@@ -26,7 +26,7 @@ void RgbSensor::init(char *mqtt_header, EspMQTTClient *mqtt_client)
     Serial.println("Init rgb");
     LedSensor::init(mqtt_header, mqtt_client);
 
-    char constructedTopic[94] = "";
+    char constructedTopic[104] = "";
     construct_topic(constructedTopic, "aux/setColor");
     mqtt_client->subscribe(constructedTopic, [&](const String &payload) {
         Serial.println(F("New color value received"));

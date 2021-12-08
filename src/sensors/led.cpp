@@ -47,7 +47,7 @@ void LedSensor::init(char *mqtt_header, EspMQTTClient *mqtt_client)
 {
     SwitchSensor::init(mqtt_header, mqtt_client);
 
-    char constructedTopic[94] = "";
+    char constructedTopic[104] = "";
     construct_topic(constructedTopic, "aux/setBrightness");
     mqtt_client->subscribe(constructedTopic, [&](const String &payload) {
         set_brightness(atof(payload.c_str()));

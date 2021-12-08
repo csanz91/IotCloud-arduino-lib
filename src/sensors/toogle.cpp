@@ -15,7 +15,7 @@ void Toogle::init(char *mqtt_header, EspMQTTClient *mqtt_client)
     Serial.println("Init toogle");
     BaseSensor::init(mqtt_header, mqtt_client);
 
-    char constructedTopic[94] = "";
+    char constructedTopic[104] = "";
     construct_topic(constructedTopic, "aux/setToogle");
     mqtt_client->subscribe(constructedTopic, [&](const String &payload) {
         Serial.println("New toogle received");
