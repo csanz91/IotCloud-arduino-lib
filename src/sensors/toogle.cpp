@@ -12,7 +12,6 @@ Toogle::Toogle(
 
 void Toogle::init(char *mqtt_header, EspMQTTClient *mqtt_client)
 {
-    Serial.println("Init toogle");
     BaseSensor::init(mqtt_header, mqtt_client);
 
     char constructedTopic[104] = "";
