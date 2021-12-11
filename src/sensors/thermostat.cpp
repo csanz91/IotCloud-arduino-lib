@@ -54,9 +54,6 @@ void Thermostat::init(char *mqtt_header, EspMQTTClient *mqtt_client)
     AnalogSensor::init(mqtt_header, mqtt_client);
 
     char constructedTopic[104] = "";
-    construct_topic(constructedTopic, "aux/thermostat");
-    mqtt_client->publish(constructedTopic, version, true);
-    constructedTopic[0] = '\0';
     construct_topic(constructedTopic, "setState");
     mqtt_client->subscribe(constructedTopic, [&](const String &payload)
                            {

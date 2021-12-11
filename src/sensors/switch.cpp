@@ -29,12 +29,9 @@ void SwitchSensor::init(char *mqtt_header, EspMQTTClient *mqtt_client)
     BaseSensor::init(mqtt_header, mqtt_client);
 
     char constructedTopic[104] = "";
-    construct_topic(constructedTopic, "aux/switch");
-    mqtt_client->publish(constructedTopic, version, true);
-
-    constructedTopic[0] = '\0';
     construct_topic(constructedTopic, "setState");
-    mqtt_client->subscribe(constructedTopic, [&](const String &payload) {
+    mqtt_client->subscribe(constructedTopic, [&](const String &payload)
+                           {
         Serial.println("New state received");
         set_state(payload.equalsIgnoreCase("true"));
     });
