@@ -15,7 +15,9 @@ void respond(bool result, const char *response_data)
 {
     char responseBuffer[1256];
     sprintf(responseBuffer, "{\"result\": %s, \"data\": %s}", result ? "true" : "false", response_data);
-    server.send(200, "application/json", responseBuffer);
+    server.setContentLength(CONTENT_LENGTH_UNKNOWN);
+    server.send(200, "application/json", "");
+    server.sendContent(responseBuffer);
 }
 
 void get_device_info()
@@ -76,7 +78,10 @@ void device_setup()
         respond(true, "\"ok\"");
         setupTime = millis();
     }
-    respond(false, "Data is not valid");
+    else
+    {
+        respond(false, "Data is not valid");
+    }
 }
 
 void web_server_setup(Device *d)

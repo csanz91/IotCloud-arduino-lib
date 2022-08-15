@@ -47,7 +47,10 @@ void Device::init(EspMQTTClient *mqtt_client)
 
 void Device::export_data(char *exported_data)
 {
-    StaticJsonDocument<1024> doc;
+
+    const int jsonDocumentMaxSize = 1024;
+
+    StaticJsonDocument<jsonDocumentMaxSize> doc;
 
     doc[F("deviceInternalId")] = _deviceInternalId;
     doc[F("deviceVersion")] = device_current_version;
@@ -55,12 +58,12 @@ void Device::export_data(char *exported_data)
 
     for (const auto &sensor : _sensors)
     {
-        char sensor_exported_data[256];
+        char sensor_exported_data[512];
         sensor->export_data(sensor_exported_data);
         json_sensors.add(serialized(sensor_exported_data));
     }
-    size_t len = serializeJson(doc, exported_data, 1024);
-    assert(len < 1024);
+    size_t len = serializeJson(doc, exported_data, jsonDocumentMaxSize);
+    assert(len < jsonDocumentMaxSize);
     doc.clear();
 }
 

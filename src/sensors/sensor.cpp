@@ -34,7 +34,8 @@ void BaseSensor::init(char *mqtt_header, EspMQTTClient *mqtt_client)
 
 void BaseSensor::export_data(char *exported_data)
 {
-    StaticJsonDocument<256> doc;
+    const int jsonDocumentMaxSize = 512;
+    StaticJsonDocument<jsonDocumentMaxSize> doc;
 
     doc[F("sensorId")] = _sensor_id;
     doc[F("sensorName")] = _sensor_name;
@@ -42,8 +43,8 @@ void BaseSensor::export_data(char *exported_data)
     doc[F("version")] = version;
     doc[F("sensorMetadata")] = serialized(_metadata);
 
-    size_t len = serializeJson(doc, exported_data, 256);
-    assert(len < 256);
+    size_t len = serializeJson(doc, exported_data, jsonDocumentMaxSize);
+    assert(len < jsonDocumentMaxSize);
     doc.clear();
 }
 
