@@ -20,6 +20,16 @@ AnalogSensor::AnalogSensor(
     _lastTask = 0;
 }
 
+void AnalogSensor::init(char *mqtt_header, EspMQTTClient *mqtt_client)
+{
+    BaseSensor::init(mqtt_header, mqtt_client);
+
+    char constructedTopic[94] = "";
+    construct_topic(constructedTopic, "aux/offset");
+    mqtt_client->subscribe(constructedTopic, [&](const String &payload)
+                           { offset = payload.toFloat(); });
+}
+
 void AnalogSensor::report_value()
 {
     // Make sure the client has been initialized
@@ -62,7 +72,7 @@ float AnalogSensor::filter_value(float new_value)
     running_avg_value /= _elements_in_buffer;
     // Calculate the maximum allowed rate of change
     float avg_tolerance = running_avg_value * _filter_rate_change;
-    
+
     // Check if the value is within the tolerances
     if (new_value < running_avg_value - avg_tolerance || new_value > running_avg_value + avg_tolerance)
         return NULL;
@@ -76,7 +86,7 @@ void AnalogSensor::set_value(float new_value)
     float filtered_value = filter_value(new_value);
     if (filtered_value != NULL)
     {
-        value = filtered_value;
+        value = filtered_value + offset;
         report_value();
     }
 }

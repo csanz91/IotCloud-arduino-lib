@@ -18,6 +18,7 @@ private:
 
 protected:
     float value;
+    float offset;
     const unsigned short _decimals;
     virtual void get_value();
     float filter_value(float);
@@ -36,6 +37,7 @@ public:
         const float filter_rate_change = 0.1);
 
     void loop();
+    void init(char *mqtt_header, EspMQTTClient *mqtt_client);
 };
 
 #endif // _IOTCLOUD_ANALOG_SENSOR
