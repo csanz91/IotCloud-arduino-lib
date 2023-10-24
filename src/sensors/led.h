@@ -7,14 +7,14 @@
 class LedSensor : public SwitchSensor
 {
 protected:
-    float _brightness = 0.0;
+    float _brightness = 0.0; // 1.0 max brightness
+    float _initialBrightness = 0.5;
     virtual void set_brightness(float);
     void report_brightness();
     void set_state(bool new_state);
 
 public:
-    
-    LedSensor(
+        LedSensor(
         const char *sensor_id,
         const char *sensor_name,
         const char *sensor_type = "led",
