@@ -9,7 +9,7 @@
 
 const char IotCloud_Constants::AP_SSID_PREFIX[] = "iot";
 const char IotCloud_Constants::AP_PASSWORD[] = "12345678";
-const char IotCloud_Constants::MQTT_SERVER[] = "iotcloud.es";
+const char IotCloud_Constants::MQTT_SERVER[] = "mqtt.iotcloud.es";
 const char IotCloud_Constants::OTA_SERVER[] = "ota.iotcloud.es";
 const char IotCloud_Constants::NTP_SERVER[] = "pool.ntp.org";
 char IotCloud_Constants::AP_SSID[9] = "";
