@@ -33,8 +33,9 @@ void AnalogSensor::init(char *mqtt_header, EspMQTTClient *mqtt_client)
 void AnalogSensor::report_value()
 {
     // Make sure the client has been initialized
-    if (!_mqtt_client)
+    if (!_mqtt_client || !_mqtt_client->isConnected())
         return;
+
     char constructedTopic[94] = "";
     construct_topic(constructedTopic, "value");
     char array[12];
@@ -48,8 +49,9 @@ void AnalogSensor::get_value()
 float AnalogSensor::filter_value(float new_value)
 {
     // Check forbiden values
-    if (isnan(new_value) || isinf(new_value))
-        return NULL;
+    if (isnan(new_value) || isinf(new_value)){
+        return NAN;
+    }
 
     if (!_enable_filter)
         return new_value;
@@ -75,7 +77,7 @@ float AnalogSensor::filter_value(float new_value)
 
     // Check if the value is within the tolerances
     if (new_value < running_avg_value - avg_tolerance || new_value > running_avg_value + avg_tolerance)
-        return NULL;
+        return NAN;
 
     return new_value;
 }
@@ -84,7 +86,7 @@ void AnalogSensor::set_value(float new_value)
 {
 
     float filtered_value = filter_value(new_value);
-    if (filtered_value != NULL)
+    if (filtered_value != NAN)
     {
         value = filtered_value + offset;
         report_value();
