@@ -8,13 +8,13 @@ class BaseSensor
 {
 private:
     char _sensor_id[64];
-    const char *_sensor_name;
     const char *_sensor_type;
     const char *_metadata;
     char *_mqtt_header;
 
 protected:
     EspMQTTClient *_mqtt_client = 0;
+    const char *_sensor_name;
     const char *version;
 
 public:
