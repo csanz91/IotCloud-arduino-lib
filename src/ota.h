@@ -11,7 +11,7 @@
 #include "iotcloud_constants.h"
 
 static const char LETSENCRYPT_ROOT_CA[] PROGMEM =
-#include "certs/letsencrypt_pem.h"
+#include "certs/iotcloud_ota_pem.h"
 
     namespace OTA
 {
