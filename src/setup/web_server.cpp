@@ -4,7 +4,7 @@ Device *device;
 #ifdef ESP8266
 #include <ESP8266WebServer.h>
 ESP8266WebServer server(80);
-#elif defined(ESP32)
+#elif defined(ARDUINO_ARCH_ESP32)
 #include <WebServer.h>
 WebServer server(80);
 #endif
@@ -36,7 +36,9 @@ void device_setup()
     {
         char errorBuffer[64];
         sprintf(errorBuffer, "deserializeJson() failed with code: %s", err.c_str());
+#ifdef DEBUG
         Serial.println(errorBuffer);
+#endif
         respond(false, errorBuffer);
         return;
     }
@@ -88,8 +90,9 @@ void web_server_setup(Device *d)
 {
 
     device = d;
-
+#ifdef DEBUG
     Serial.println("Starting web server...");
+#endif
     // Define endpoints and its handlers
     server.on("/getDeviceInfo", HTTP_GET, get_device_info);
     server.on("/deviceSetup", HTTP_POST, device_setup);
@@ -107,7 +110,9 @@ void web_server_loop()
     {
         server.close();
         server.stop();
+#ifdef DEBUG
         Serial.println("Restarting device...");
+#endif
         ESP.restart();
     }
 }

@@ -2,7 +2,7 @@
 #define _IOTCLOUD_OTA
 #ifdef ESP8266
 #include "ESP8266httpUpdate.h"
-#elif defined(ESP32)
+#elif defined(ARDUINO_ARCH_ESP32)
 #include <HTTPUpdate.h>
 #endif
 

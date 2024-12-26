@@ -33,8 +33,18 @@ void Device::init(EspMQTTClient *mqtt_client)
     mqtt_client->subscribe(topic, [&](const String &payload) {
         if (payload.equalsIgnoreCase("true"))
         {
+#ifdef DEBUG
             Serial.println(F("Reseting the device..."));
+#endif
             clear_saved_data();
+            ESP.restart();
+        }
+    });
+
+    get_topic(topic, "restart");
+    mqtt_client->subscribe(topic, [&](const String &payload) {
+        if (payload.equalsIgnoreCase("true"))
+        {
             ESP.restart();
         }
     });

@@ -33,7 +33,9 @@ void runtime_mode_setup(const device_data *received_data, Device *d)
 
 void onConnectionEstablished()
 {
+#ifdef DEBUG
     Serial.println(F("Connected to the mqtt server"));
+#endif
     configTzTime(TZ_Europe_Madrid, IotCloud_Constants::NTP_SERVER);
 
     _device->init(mqtt_client);

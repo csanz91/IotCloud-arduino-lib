@@ -2,10 +2,11 @@
 
 Toogle::Toogle(
     const char *sensor_id,
-    const char *sensor_name) : BaseSensor(sensor_id,
-                                          sensor_name,
-                                          "toogle",
-                                          "{\"bidirectional\": false}")
+    const char *sensor_name,
+    const char *metadata) : BaseSensor(sensor_id,
+                                       sensor_name,
+                                       "toogle",
+                                       metadata)
 {
 }
 
@@ -29,10 +30,15 @@ void Toogle::init(char *mqtt_header, EspMQTTClient *mqtt_client)
                                {
                                    set_toogle_state(ToogleStates::DOWN);
                                } });
+
+    constructedTopic[0] = '\0';
+    construct_topic(constructedTopic, "aux/actionTime");
+    mqtt_client->subscribe(constructedTopic, [&](const String &payload)
+                           { action_time = atoi(payload.c_str()); });
 };
 
 void Toogle::set_toogle_state(ToogleStates toogle_state)
 {
-    Serial.print("New toogle received: ");
-    Serial.println(toogle_state);
+    toogle_action = toogle_state;
+    action_start_time = millis();
 }

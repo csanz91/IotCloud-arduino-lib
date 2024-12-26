@@ -3,8 +3,9 @@
 
 #ifdef ESP8266
     #include "ESP8266httpUpdate.h"
-#elif defined(ESP32)
-    #include <HTTPUpdate.h>
+#elif defined(ARDUINO_ARCH_ESP32)
+#include <WiFi.h>
+#include <HTTPUpdate.h>
 #endif
 
 #include "EspMQTTClient.h"

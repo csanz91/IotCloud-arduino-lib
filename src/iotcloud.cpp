@@ -28,12 +28,16 @@ void iotcloud_setup(Device *device)
 
     if (runtime_mode)
     {
+#ifdef DEBUG
         Serial.println(F("Starting runtime mode setup"));
+#endif
         runtime_mode_setup(&data, device);
     }
     else
     {
+#ifdef DEBUG
         Serial.println(F("Starting config mode setup"));
+#endif
         config_mode_setup(device);
     }
 }

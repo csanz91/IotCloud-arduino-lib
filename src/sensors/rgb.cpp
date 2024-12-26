@@ -23,14 +23,18 @@ void RgbSensor::set_color(const char *color)
 
 void RgbSensor::init(char *mqtt_header, EspMQTTClient *mqtt_client)
 {
+#ifdef DEBUG
     Serial.println("Init rgb");
+#endif
     LedSensor::init(mqtt_header, mqtt_client);
 
     char constructedTopic[104] = "";
     construct_topic(constructedTopic, "aux/setColor");
-    mqtt_client->subscribe(constructedTopic, [&](const String &payload) {
+    mqtt_client->subscribe(constructedTopic, [&](const String &payload)
+                           {
+#ifdef DEBUG
         Serial.println(F("New color value received"));
+#endif
 
-        set_color(payload.c_str());
-    });
+        set_color(payload.c_str()); });
 };

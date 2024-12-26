@@ -4,8 +4,8 @@
 #include <Arduino.h>
 #ifdef ESP8266
     #include "TZ.h"
-#elif defined(ESP32)
-    #include "TZdef.h"
+#elif defined(ARDUINO_ARCH_ESP32)
+#include "TZdef.h"
 #endif
 #include <time.h>
 #include "EspMQTTClient.h"

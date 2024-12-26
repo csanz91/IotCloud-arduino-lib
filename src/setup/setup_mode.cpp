@@ -3,12 +3,16 @@
 
 void config_mode_setup(Device *device)
 {
+#ifdef DEBUG
     Serial.println("Setup mode started...");
+#endif
 
     pinMode(LED_BUILTIN, OUTPUT);
 
     // Start access point
+#ifdef DEBUG
     Serial.println("Starting WiFi AP...");
+#endif
     WiFi.persistent(false);
     WiFi.softAP(IotCloud_Constants::AP_SSID, IotCloud_Constants::AP_PASSWORD);
 

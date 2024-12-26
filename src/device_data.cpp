@@ -16,7 +16,9 @@ void clear_saved_data()
 void save_data(const device_data *data)
 {
     EEPROM.begin(EEPROM_SIZE);
+#ifdef DEBUG
     pretty_print_data(data);
+#endif
     EEPROM.put(INITIAL_ADDR, *data);
     EEPROM.end();
 }

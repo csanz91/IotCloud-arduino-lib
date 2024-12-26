@@ -24,7 +24,7 @@ namespace OTA
 
 #ifdef ESP8266
         ESPhttpUpdate.rebootOnUpdate(false);
-#elif defined(ESP32)
+#elif defined(ARDUINO_ARCH_ESP32)
         httpUpdate.rebootOnUpdate(false);
 #endif
 
@@ -32,21 +32,23 @@ namespace OTA
         strcat(constructedTopic, _device_model);
         mqtt_client->subscribe(constructedTopic, [&](const String &payload)
                                {
+#ifdef DEBUG
                                    Serial.println("New ota update request received");
+#endif
                                    if (strlcpy(_new_version, payload.c_str(), sizeof _new_version) >= sizeof _new_version)
                                    {
                                        _publishOtaStatus(400, "Version lenght too big");
                                        return;
                                    }
-
+#ifdef DEBUG
                                    Serial.println(_new_version);
-                                   _ota_requested = true;
-                               });
+#endif
+                                   _ota_requested = true; });
     }
 
     void _publishOtaStatus(int status, const char *info)
     {
-        char payload[90] = "";
+        char payload[100] = "";
         itoa(status, payload, 10);
         if (info)
         {
@@ -61,27 +63,37 @@ namespace OTA
 
     void _start_update()
     {
-        Serial.println(F("Starting OTA update"));
+#ifdef DEBUG
+        Serial.println(F("Starting OTA update"));\
+#endif
 
         if (strcmp(_new_version, _current_version) == 0)
         {
+#ifdef DEBUG
             Serial.println(F("The device has already been updated. Ignore update"));
+#endif
             _publishOtaStatus(400, "The device has already been updated. Ignore update");
             return;
         }
 
-        WiFiClientSecure client;
 #ifdef ESP8266
+        WiFiClientSecure client;
         X509List cert(LETSENCRYPT_ROOT_CA);
         client.setTrustAnchors(&cert);
-#elif defined(ESP32)
+#elif defined(ARDUINO_ARCH_ESP32)
+        NetworkClientSecure client;
         client.setCACert(LETSENCRYPT_ROOT_CA);
 #endif
         client.setTimeout(5000);
-        if (!client.connect(IotCloud_Constants::OTA_SERVER, 443))
-        {
-            _publishOtaStatus(400, "Connection failed");
-            Serial.println(F("Connection failed"));
+        if (!client.connect(IotCloud_Constants::OTA_SERVER, 443)) {
+            char buf[200];
+            #ifdef ESP8266
+            int lastErr = client.getLastSSLError(buf, sizeof(buf));
+            #elif defined(ARDUINO_ARCH_ESP32)
+            int lastErr = client.lastError(buf, sizeof(buf));
+            #endif
+            
+            _publishOtaStatus(400, buf);
             return;
         }
 
@@ -95,7 +107,7 @@ namespace OTA
 #ifdef ESP8266
         ESPhttpUpdate.setLedPin(LED_BUILTIN, LOW);
         t_httpUpdate_return ret = ESPhttpUpdate.update(client, url);
-#elif defined(ESP32)
+#elif defined(ARDUINO_ARCH_ESP32)
         httpUpdate.setLedPin(LED_BUILTIN, LOW);
         t_httpUpdate_return ret = httpUpdate.update(client, url);
 #endif
@@ -107,22 +119,28 @@ namespace OTA
 #ifdef ESP8266
             sprintf(error_msg, "HTTP_UPDATE_FAILED Error (%d): %s\n", ESPhttpUpdate.getLastError(), ESPhttpUpdate.getLastErrorString().c_str());
 
-#elif defined(ESP32)
+#elif defined(ARDUINO_ARCH_ESP32)
             sprintf(error_msg, "HTTP_UPDATE_FAILED Error (%d): %s\n", httpUpdate.getLastError(), httpUpdate.getLastErrorString().c_str());
 #endif
+#ifdef DEBUG
             Serial.println(error_msg);
+#endif
             _publishOtaStatus(400, error_msg);
             break;
 
         case HTTP_UPDATE_NO_UPDATES:
             strcpy(error_msg, "HTTP_UPDATE_NO_UPDATES");
+#ifdef DEBUG
             Serial.println(error_msg);
+#endif
             _publishOtaStatus(400, error_msg);
             break;
 
         case HTTP_UPDATE_OK:
             strcpy(error_msg, "Update finished suscesfully. Restarting...");
+#ifdef DEBUG
             Serial.println(error_msg);
+#endif
             _publishOtaStatus(400, error_msg);
             ESP.restart();
             break;

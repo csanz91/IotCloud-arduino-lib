@@ -5,9 +5,9 @@
 #ifdef ESP8266
     #include <WiFiClient.h>
     #include <ESP8266WiFi.h>
-#elif defined(ESP32)
-    #include <HTTPClient.h>
-    #include <WiFi.h>
+#elif defined(ARDUINO_ARCH_ESP32)
+#include <HTTPClient.h>
+#include <WiFi.h>
 #endif
 
 #include "../iotcloud_constants.h"
