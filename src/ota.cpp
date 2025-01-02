@@ -64,7 +64,7 @@ namespace OTA
     void _start_update()
     {
 #ifdef DEBUG
-        Serial.println(F("Starting OTA update"));\
+        Serial.println(F("Starting OTA update"));
 #endif
 
         if (strcmp(_new_version, _current_version) == 0)
