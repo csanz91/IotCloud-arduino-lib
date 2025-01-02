@@ -22,8 +22,8 @@ protected:
     const unsigned short _decimals;
     virtual void get_value();
     float filter_value(float);
-    virtual void set_value(float);
-    virtual void report_value();
+    virtual bool set_value(float);
+    virtual bool report_value();
 
 public:
     AnalogSensor(

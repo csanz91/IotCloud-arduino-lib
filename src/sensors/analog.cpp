@@ -30,17 +30,18 @@ void AnalogSensor::init(char *mqtt_header, EspMQTTClient *mqtt_client)
                            { offset = payload.toFloat(); });
 }
 
-void AnalogSensor::report_value()
+bool AnalogSensor::report_value()
 {
     // Make sure the client has been initialized
     if (!_mqtt_client || !_mqtt_client->isConnected())
-        return;
+        return false;
 
     char constructedTopic[94] = "";
     construct_topic(constructedTopic, "value");
     char array[12];
     dtostrf(value, 1, _decimals, array);
     _mqtt_client->publish(constructedTopic, array, true);
+    return true;
 }
 
 void AnalogSensor::get_value()
@@ -82,15 +83,16 @@ float AnalogSensor::filter_value(float new_value)
     return new_value;
 }
 
-void AnalogSensor::set_value(float new_value)
+bool AnalogSensor::set_value(float new_value)
 {
 
     float filtered_value = filter_value(new_value);
     if (filtered_value != NAN)
     {
         value = filtered_value + offset;
-        report_value();
+        return report_value();
     }
+    return false;
 }
 
 void AnalogSensor::loop()
