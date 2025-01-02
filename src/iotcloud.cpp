@@ -58,20 +58,6 @@ void iotcloud_loop(void)
     }
     detect_reset_request();
 
-#ifdef DEBUG
-    unsigned int elapsed = millis() - lastDebugMessage;
-    if (elapsed > 60000)
-    {
-        Serial.print(F("Heap fragmentation: "));
-        Serial.println(ESP.getHeapFragmentation());
-        Serial.print(F("Heap free: "));
-        Serial.println(ESP.getFreeHeap());
-        Serial.println();
-
-        lastDebugMessage = millis();
-    }
-
-#endif
 }
 
 void detect_reset_request()
