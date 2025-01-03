@@ -78,11 +78,11 @@ namespace OTA
 
 #ifdef ESP8266
         WiFiClientSecure client;
-        X509List cert(LETSENCRYPT_ROOT_CA);
+        X509List cert(IOTCLOUD_OTA_ROOT_CA);
         client.setTrustAnchors(&cert);
 #elif defined(ARDUINO_ARCH_ESP32)
         NetworkClientSecure client;
-        client.setCACert(LETSENCRYPT_ROOT_CA);
+        client.setCACert(IOTCLOUD_OTA_ROOT_CA);
 #endif
         client.setTimeout(5000);
         if (!client.connect(IotCloud_Constants::OTA_SERVER, 443)) {
