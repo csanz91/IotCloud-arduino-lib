@@ -34,7 +34,7 @@ public:
     inline void add_sensor(BaseSensor *sensor) { _sensors.push_back(sensor); };
     void init(EspMQTTClient *mqtt_client);
     void export_data(char *exported_data);
-    void get_topic(char *topic, const char *endpoint);
+    void get_topic(char *topic, size_t size, const char *endpoint);
     void loop();
 };
 

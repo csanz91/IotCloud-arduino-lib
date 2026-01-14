@@ -28,8 +28,8 @@ namespace OTA
         httpUpdate.rebootOnUpdate(false);
 #endif
 
-        char constructedTopic[64] = "v1/ota/update/";
-        strcat(constructedTopic, _device_model);
+        char constructedTopic[128];
+        snprintf(constructedTopic, sizeof(constructedTopic), "v1/ota/update/%s", _device_model);
         mqtt_client->subscribe(constructedTopic, [&](const String &payload)
                                {
 #ifdef DEBUG
@@ -37,7 +37,7 @@ namespace OTA
 #endif
                                    if (strlcpy(_new_version, payload.c_str(), sizeof _new_version) >= sizeof _new_version)
                                    {
-                                       _publishOtaStatus(400, "Version lenght too big");
+                                       _publishOtaStatus(400, "Version length too big");
                                        return;
                                    }
 #ifdef DEBUG
@@ -48,16 +48,15 @@ namespace OTA
 
     void _publishOtaStatus(int status, const char *info)
     {
-        char payload[100] = "";
-        itoa(status, payload, 10);
-        if (info)
-        {
-            strcat(payload, " ");
-            strcat(payload, info);
+        char payload[128];
+        if (info) {
+            snprintf(payload, sizeof(payload), "%d %s", status, info);
+        } else {
+            snprintf(payload, sizeof(payload), "%d", status);
         }
-        char topic[strlen(_mqtt_ota_header) + 11];
-        strcpy(topic, _mqtt_ota_header);
-        strcat(topic, "ota/status");
+
+        char topic[128];
+        snprintf(topic, sizeof(topic), "%sota/status", _mqtt_ota_header);
         _mqtt_client->publish(topic, payload);
     }
 
@@ -97,12 +96,8 @@ namespace OTA
             return;
         }
 
-        char url[128] = "https://";
-        strcat(url, IotCloud_Constants::OTA_SERVER);
-        strcat(url, "/");
-        strcat(url, _device_model);
-        strcat(url, "/");
-        strcat(url, _new_version);
+        char url[256];
+        snprintf(url, sizeof(url), "https://%s/%s/%s", IotCloud_Constants::OTA_SERVER, _device_model, _new_version);
 
 #ifdef ESP8266
         ESPhttpUpdate.setLedPin(LED_BUILTIN, LOW);
@@ -117,10 +112,10 @@ namespace OTA
         {
         case HTTP_UPDATE_FAILED:
 #ifdef ESP8266
-            sprintf(error_msg, "HTTP_UPDATE_FAILED Error (%d): %s\n", ESPhttpUpdate.getLastError(), ESPhttpUpdate.getLastErrorString().c_str());
+            snprintf(error_msg, sizeof(error_msg), "HTTP_UPDATE_FAILED Error (%d): %s\n", ESPhttpUpdate.getLastError(), ESPhttpUpdate.getLastErrorString().c_str());
 
 #elif defined(ARDUINO_ARCH_ESP32)
-            sprintf(error_msg, "HTTP_UPDATE_FAILED Error (%d): %s\n", httpUpdate.getLastError(), httpUpdate.getLastErrorString().c_str());
+            snprintf(error_msg, sizeof(error_msg), "HTTP_UPDATE_FAILED Error (%d): %s\n", httpUpdate.getLastError(), httpUpdate.getLastErrorString().c_str());
 #endif
 #ifdef DEBUG
             Serial.println(error_msg);
@@ -129,7 +124,7 @@ namespace OTA
             break;
 
         case HTTP_UPDATE_NO_UPDATES:
-            strcpy(error_msg, "HTTP_UPDATE_NO_UPDATES");
+            strlcpy(error_msg, "HTTP_UPDATE_NO_UPDATES", sizeof(error_msg));
 #ifdef DEBUG
             Serial.println(error_msg);
 #endif
@@ -137,11 +132,11 @@ namespace OTA
             break;
 
         case HTTP_UPDATE_OK:
-            strcpy(error_msg, "Update finished suscesfully. Restarting...");
+            strlcpy(error_msg, "Update finished successfully. Restarting...", sizeof(error_msg));
 #ifdef DEBUG
             Serial.println(error_msg);
 #endif
-            _publishOtaStatus(400, error_msg);
+            _publishOtaStatus(200, error_msg);
             ESP.restart();
             break;
         }

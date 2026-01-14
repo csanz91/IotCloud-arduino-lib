@@ -21,8 +21,8 @@ Thermostat::Thermostat(
 
 void Thermostat::report_state()
 {
-    char constructedTopic[94] = "";
-    construct_topic(constructedTopic, "state");
+    char constructedTopic[128] = "";
+    construct_topic(constructedTopic, sizeof(constructedTopic), "state");
     _mqtt_client->publish(constructedTopic, state ? "true" : "false", true);
 }
 
@@ -38,8 +38,8 @@ void Thermostat::set_state(bool new_state)
 
 void Thermostat::report_heating()
 {
-    char constructedTopic[104] = "";
-    construct_topic(constructedTopic, "aux/heating");
+    char constructedTopic[128] = "";
+    construct_topic(constructedTopic, sizeof(constructedTopic), "aux/heating");
     _mqtt_client->publish(constructedTopic, heating ? "true" : "false", true);
 }
 
@@ -53,8 +53,8 @@ void Thermostat::init(char *mqtt_header, EspMQTTClient *mqtt_client)
 {
     AnalogSensor::init(mqtt_header, mqtt_client);
 
-    char constructedTopic[104] = "";
-    construct_topic(constructedTopic, "setState");
+    char constructedTopic[128] = "";
+    construct_topic(constructedTopic, sizeof(constructedTopic), "setState");
     mqtt_client->subscribe(constructedTopic, [&](const String &payload)
                            {
 #ifdef DEBUG
@@ -63,7 +63,7 @@ void Thermostat::init(char *mqtt_header, EspMQTTClient *mqtt_client)
                                set_state(payload.equalsIgnoreCase("true"));
                            });
     constructedTopic[0] = '\0';
-    construct_topic(constructedTopic, "aux/setHeating");
+    construct_topic(constructedTopic, sizeof(constructedTopic), "aux/setHeating");
     mqtt_client->subscribe(constructedTopic, [&](const String &payload)
                            {
 #ifdef DEBUG

@@ -10,8 +10,8 @@ Device::Device(
         IotCloud_Constants::setup_constants();
 
     _deviceInternalId = IotCloud_Constants::DEVICE_INTERNAL_ID;
-    char mqtt_header[70] = "";
-    char mqtt_status_topic[76] = "";
+    mqtt_header[0] = '\0';
+    mqtt_status_topic[0] = '\0';
 }
 
 void Device::init(EspMQTTClient *mqtt_client)
@@ -19,17 +19,17 @@ void Device::init(EspMQTTClient *mqtt_client)
 
     mqtt_client->publish(mqtt_status_topic, "online", true);
 
-    char topic[strlen(mqtt_header) + 8];
-    get_topic(topic, "ip");
+    char topic[128];
+    get_topic(topic, sizeof(topic), "ip");
     mqtt_client->publish(topic, WiFi.localIP().toString(), true);
 
-    get_topic(topic, "version");
+    get_topic(topic, sizeof(topic), "version");
     mqtt_client->publish(topic, device_current_version, true);
 
-    get_topic(topic, "model");
+    get_topic(topic, sizeof(topic), "model");
     mqtt_client->publish(topic, device_model, true);
 
-    get_topic(topic, "reset");
+    get_topic(topic, sizeof(topic), "reset");
     mqtt_client->subscribe(topic, [&](const String &payload) {
         if (payload.equalsIgnoreCase("true"))
         {
@@ -41,7 +41,7 @@ void Device::init(EspMQTTClient *mqtt_client)
         }
     });
 
-    get_topic(topic, "restart");
+    get_topic(topic, sizeof(topic), "restart");
     mqtt_client->subscribe(topic, [&](const String &payload) {
         if (payload.equalsIgnoreCase("true"))
         {
@@ -77,10 +77,9 @@ void Device::export_data(char *exported_data)
     doc.clear();
 }
 
-void Device::get_topic(char *topic, const char *endpoint)
+void Device::get_topic(char *topic, size_t size, const char *endpoint)
 {
-    strcpy(topic, mqtt_header);
-    strcat(topic, endpoint);
+    snprintf(topic, size, "%s%s", mqtt_header, endpoint);
 }
 
 void Device::loop()

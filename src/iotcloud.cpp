@@ -42,9 +42,6 @@ void iotcloud_setup(Device *device)
     }
 }
 
-#ifdef DEBUG
-unsigned int lastDebugMessage = millis();
-#endif
 
 void iotcloud_loop(void)
 {
@@ -67,7 +64,7 @@ void detect_reset_request()
     if (currentState == HIGH) // button is not pressed
         releasedTime = millis();
 
-    long pressDuration = millis() - releasedTime;
+    unsigned long pressDuration = millis() - releasedTime;
 
     if (pressDuration > RESET_PRESS_TIME)
     {

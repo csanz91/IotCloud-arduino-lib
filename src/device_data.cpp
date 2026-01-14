@@ -61,4 +61,10 @@ void pretty_print_data(const device_data *data)
 
     Serial.print(F("wifi password: "));
     Serial.println(data->wifiPassword);
+
+    Serial.print(F("SubsensorID: "));
+    Serial.println(data->subsensorId);
+
+    Serial.print(F("SubdeviceID: "));
+    Serial.println(data->subdeviceId);
 }

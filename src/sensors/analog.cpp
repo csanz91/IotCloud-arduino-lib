@@ -18,14 +18,18 @@ AnalogSensor::AnalogSensor(
                                       _filter_rate_change(filter_rate_change)
 {
     _lastTask = 0;
+    _next_running_avg = 0;
+    _elements_in_buffer = 0;
+    value = NAN;
+    offset = 0;
 }
 
 void AnalogSensor::init(char *mqtt_header, EspMQTTClient *mqtt_client)
 {
     BaseSensor::init(mqtt_header, mqtt_client);
 
-    char constructedTopic[94] = "";
-    construct_topic(constructedTopic, "aux/offset");
+    char constructedTopic[128] = "";
+    construct_topic(constructedTopic, sizeof(constructedTopic), "aux/offset");
     mqtt_client->subscribe(constructedTopic, [&](const String &payload)
                            { offset = payload.toFloat(); });
 }
@@ -36,8 +40,8 @@ bool AnalogSensor::report_value()
     if (!_mqtt_client || !_mqtt_client->isConnected())
         return false;
 
-    char constructedTopic[94] = "";
-    construct_topic(constructedTopic, "value");
+    char constructedTopic[128] = "";
+    construct_topic(constructedTopic, sizeof(constructedTopic), "value");
     char array[12];
     dtostrf(value, 1, _decimals, array);
     _mqtt_client->publish(constructedTopic, array, true);
@@ -87,7 +91,7 @@ bool AnalogSensor::set_value(float new_value)
 {
 
     float filtered_value = filter_value(new_value);
-    if (filtered_value != NAN)
+    if (!isnan(filtered_value))
     {
         value = filtered_value + offset;
         return report_value();

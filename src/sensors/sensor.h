@@ -10,9 +10,9 @@ private:
     char _sensor_id[64];
     const char *_sensor_type;
     const char *_metadata;
-    char *_mqtt_header;
 
 protected:
+    char *_mqtt_header;
     EspMQTTClient *_mqtt_client = 0;
     const char *_sensor_name;
     const char *version;
@@ -29,7 +29,7 @@ public:
     virtual void init(char *mqtt_header, EspMQTTClient *mqtt_client);
     virtual void loop();
     void export_data(char *exported_data);
-    void construct_topic(char *newTopic, const char *endpoint);
+    void construct_topic(char *newTopic, size_t size, const char *endpoint);
 };
 
 #endif // _IOTCLOUD_BASE_SENSOR

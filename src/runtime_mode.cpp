@@ -9,10 +9,8 @@ void runtime_mode_setup(const device_data *received_data, Device *d)
 {
     data = *received_data;
     _device = d;
-
-    // This can surely be optimized
-    sprintf(d->mqtt_header, "v1/%s/%s/", data.locationId, data.deviceId);
-    _device->get_topic(d->mqtt_status_topic, "status");
+    snprintf(d->mqtt_header, sizeof(d->mqtt_header), "v1/%s/%s/", data.locationId, data.deviceId);
+    _device->get_topic(d->mqtt_status_topic, sizeof(d->mqtt_status_topic), "status");
 
     mqtt_client = new EspMQTTClient(
         data.wifiSSID,

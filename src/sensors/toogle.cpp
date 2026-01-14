@@ -14,8 +14,8 @@ void Toogle::init(char *mqtt_header, EspMQTTClient *mqtt_client)
 {
     BaseSensor::init(mqtt_header, mqtt_client);
 
-    char constructedTopic[104] = "";
-    construct_topic(constructedTopic, "aux/setToogle");
+    char constructedTopic[128] = "";
+    construct_topic(constructedTopic, sizeof(constructedTopic), "aux/setToogle");
     mqtt_client->subscribe(constructedTopic, [&](const String &payload)
                            {
                                if (payload.equals("toogle"))
@@ -32,7 +32,7 @@ void Toogle::init(char *mqtt_header, EspMQTTClient *mqtt_client)
                                } });
 
     constructedTopic[0] = '\0';
-    construct_topic(constructedTopic, "aux/actionTime");
+    construct_topic(constructedTopic, sizeof(constructedTopic), "aux/actionTime");
     mqtt_client->subscribe(constructedTopic, [&](const String &payload)
                            { action_time = atoi(payload.c_str()); });
 };

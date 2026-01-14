@@ -13,17 +13,12 @@ BaseSensor::BaseSensor(
                            _metadata(metadata),
                            version(version)
 {
-    strcpy(_sensor_id, IotCloud_Constants::DEVICE_INTERNAL_ID);
-    strcat(_sensor_id, "_");
-    strcat(_sensor_id, sensor_id);
+    snprintf(_sensor_id, sizeof(_sensor_id), "%s_%s", IotCloud_Constants::DEVICE_INTERNAL_ID, sensor_id);
 }
 
-void BaseSensor::construct_topic(char *newTopic, const char *endpoint)
+void BaseSensor::construct_topic(char *newTopic, size_t size, const char *endpoint)
 {
-    strcpy(newTopic, _mqtt_header);
-    strcat(newTopic, _sensor_id);
-    strcat(newTopic, "/");
-    strcat(newTopic, endpoint);
+    snprintf(newTopic, size, "%s%s/%s", _mqtt_header, _sensor_id, endpoint);
 }
 
 void BaseSensor::init(char *mqtt_header, EspMQTTClient *mqtt_client)

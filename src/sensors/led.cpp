@@ -13,8 +13,8 @@ LedSensor::LedSensor(
 
 void LedSensor::report_brightness()
 {
-    char constructedTopic[94] = "";
-    construct_topic(constructedTopic, "aux/brightness");
+    char constructedTopic[128] = "";
+    construct_topic(constructedTopic, sizeof(constructedTopic), "aux/brightness");
     char array[7];
     dtostrf(_brightness, 5, 2, array);
     _mqtt_client->publish(constructedTopic, array, true);
@@ -47,13 +47,13 @@ void LedSensor::init(char *mqtt_header, EspMQTTClient *mqtt_client)
 {
     SwitchSensor::init(mqtt_header, mqtt_client);
 
-    char constructedTopic[110] = "";
-    construct_topic(constructedTopic, "aux/setBrightness");
+    char constructedTopic[128] = "";
+    construct_topic(constructedTopic, sizeof(constructedTopic), "aux/setBrightness");
     mqtt_client->subscribe(constructedTopic, [&](const String &payload)
                            { set_brightness(atof(payload.c_str())); });
 
     constructedTopic[0] = '\0';
-    construct_topic(constructedTopic, "aux/initialBrightness");
+    construct_topic(constructedTopic, sizeof(constructedTopic), "aux/initialBrightness");
     mqtt_client->subscribe(constructedTopic, [&](const String &payload)
                            { _initialBrightness = atof(payload.c_str()); });
 
