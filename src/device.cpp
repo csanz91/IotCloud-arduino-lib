@@ -49,6 +49,59 @@ void Device::init(EspMQTTClient *mqtt_client)
         }
     });
 
+    get_topic(topic, sizeof(topic), "network");
+    mqtt_client->subscribe(topic, [&](const String &payload) {
+        StaticJsonDocument<256> doc;
+        DeserializationError err = deserializeJson(doc, payload);
+        if (err)
+        {
+#ifdef DEBUG
+            Serial.print(F("Network config JSON parse failed: "));
+            Serial.println(err.c_str());
+#endif
+            return;
+        }
+
+        if (!doc["wifiSSID"].is<const char *>() || !doc["wifiPassword"].is<const char *>())
+        {
+#ifdef DEBUG
+            Serial.println(F("Network config payload missing wifiSSID or wifiPassword"));
+#endif
+            return;
+        }
+
+        const char *wifiSSID = doc["wifiSSID"];
+        const char *wifiPassword = doc["wifiPassword"];
+        device_data data = get_data();
+
+        if (strlcpy(data.wifiSSID, wifiSSID, WIFI_SSID_MAX_SIZE) >= WIFI_SSID_MAX_SIZE)
+        {
+#ifdef DEBUG
+            Serial.println(F("wifiSSID length is too big"));
+#endif
+            return;
+        }
+
+        if (strlcpy(data.wifiPassword, wifiPassword, WIFI_PASSWORD_MAX_SIZE) >= WIFI_PASSWORD_MAX_SIZE)
+        {
+#ifdef DEBUG
+            Serial.println(F("wifiPassword length is too big"));
+#endif
+            return;
+        }
+
+        if (!validate_device_data(&data))
+        {
+#ifdef DEBUG
+            Serial.println(F("Network config data is not valid"));
+#endif
+            return;
+        }
+
+        save_data(&data);
+        ESP.restart();
+    });
+
     for (const auto &sensor : _sensors)
     {
         sensor->init(mqtt_header, mqtt_client);

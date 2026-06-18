@@ -436,6 +436,16 @@ Once configured, the device operates in **Runtime Mode**:
 | `v1/{locationId}/{deviceId}/model` | Publish | Device model |
 | `v1/{locationId}/{deviceId}/reset` | Subscribe | Factory reset command |
 | `v1/{locationId}/{deviceId}/restart` | Subscribe | Restart command |
+| `v1/{locationId}/{deviceId}/network` | Subscribe | Update WiFi credentials and restart |
+
+Network update payload:
+
+```json
+{
+    "wifiSSID": "new_wifi_ssid",
+    "wifiPassword": "new_wifi_password"
+}
+```
 
 ## OTA Updates
 
