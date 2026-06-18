@@ -1,28 +1,28 @@
-#ifndef _IOTCLOUD_TOOGLE_SENSOR
-#define _IOTCLOUD_TOOGLE_SENSOR
+#ifndef _IOTCLOUD_TOGGLE_SENSOR
+#define _IOTCLOUD_TOGGLE_SENSOR
 
 #include "EspMQTTClient.h"
 #include "sensor.h"
 
-class Toogle : public BaseSensor
+class Toggle : public BaseSensor
 {
 
 public:
-    enum ToogleStates
+    enum ToggleState
     {
         INACTIVE,
         UP,
         DOWN,
-        TOOGLE
+        TOGGLE
     };
 
 protected:
-    virtual void set_toogle_state(ToogleStates);
+    virtual void set_toggle_state(ToggleState);
     unsigned long action_time = 10000;
     unsigned long action_start_time = 0;
-    ToogleStates toogle_action = ToogleStates::INACTIVE;
+    ToggleState toggle_action = ToggleState::INACTIVE;
 
-    Toogle(
+    Toggle(
         const char *sensor_id,
         const char *sensor_name,
         const char *metadata = "{}");
@@ -30,4 +30,4 @@ protected:
     void init(char *mqtt_header, EspMQTTClient *mqtt_client);
 };
 
-#endif // _IOTCLOUD_TOOGLE_SENSOR
+#endif // _IOTCLOUD_TOGGLE_SENSOR
