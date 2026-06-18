@@ -40,6 +40,10 @@ bool AnalogSensor::report_value()
     if (!_mqtt_client || !_mqtt_client->isConnected())
         return false;
 
+    // Don't publish NaN or Inf values
+    if (isnan(value) || isinf(value))
+        return false;
+
     char constructedTopic[128] = "";
     construct_topic(constructedTopic, sizeof(constructedTopic), "value");
     char array[12];
