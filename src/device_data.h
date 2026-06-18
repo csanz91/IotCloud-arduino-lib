@@ -1,6 +1,7 @@
 #ifndef _IOTCLOUD_DEVICE_DATA
 #define _IOTCLOUD_DEVICE_DATA
 
+// Current struct sizes
 #define TOKEN_MAX_SIZE 396
 #define DEVICEID_MAX_SIZE 33
 #define WIFI_SSID_MAX_SIZE 33
@@ -8,6 +9,9 @@
 #define LOCATIONID_MAX_SIZE 26
 #define SUBSENSORID_MAX_SIZE 64
 #define SUBDEVICEID_MAX_SIZE 33
+
+// Legacy struct sizes (for migration from old firmware)
+#define LEGACY_TOKEN_MAX_SIZE 290
 
 struct device_data
 {
