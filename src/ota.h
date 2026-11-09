@@ -8,6 +8,7 @@
 
 #include "EspMQTTClient.h"
 
+#include "IotCloud_config.h"
 #include "iotcloud_constants.h"
 
 static const char IOTCLOUD_OTA_ROOT_CA[] PROGMEM =

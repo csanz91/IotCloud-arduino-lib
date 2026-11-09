@@ -15,7 +15,9 @@ protected:
     virtual void set_heating(bool);
     void report_heating();
 
-    float value;
+private:
+    // When the connection was lost while heating (see loop())
+    unsigned long _offline_since_ms = 0;
 
 public:
     Thermostat(
@@ -26,9 +28,11 @@ public:
         const bool enable_filter = true,
         const char *sensor_type = "thermostat",
         const char *metadata = "{}",
-        const float filter_rate_change = 0.1);
+        const float filter_rate_change = 0.1,
+        const char *sensor_sub_type = nullptr);
 
     virtual void init(char *mqtt_header, EspMQTTClient *mqtt_client);
+    void loop();
 };
 
 #endif // _IOTCLOUD_THERMOSTAT_SENSOR

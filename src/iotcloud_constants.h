@@ -8,6 +8,7 @@ namespace IotCloud_Constants
     extern const char AP_PASSWORD[];
     extern const char OTA_SERVER[];
     extern const char NTP_SERVER[];
+    extern const char LIB_VERSION[];
     extern char DEVICE_INTERNAL_ID[];
     extern char AP_SSID[];
     extern bool ENABLE_OTA;

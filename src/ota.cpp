@@ -1,3 +1,5 @@
+#include <ArduinoJson.h>
+
 #include "ota.h"
 
 namespace OTA
@@ -33,7 +35,7 @@ namespace OTA
         mqtt_client->subscribe(constructedTopic, [&](const String &payload)
                                {
 #ifdef DEBUG
-                                   Serial.println("New ota update request received");
+                                   IOTCLOUD_LOG_PRINTLN("New ota update request received");
 #endif
                                    if (strlcpy(_new_version, payload.c_str(), sizeof _new_version) >= sizeof _new_version)
                                    {
@@ -41,19 +43,24 @@ namespace OTA
                                        return;
                                    }
 #ifdef DEBUG
-                                   Serial.println(_new_version);
+                                   IOTCLOUD_LOG_PRINTLN(_new_version);
 #endif
                                    _ota_requested = true; });
     }
 
     void _publishOtaStatus(int status, const char *info)
     {
-        char payload[128];
-        if (info) {
-            snprintf(payload, sizeof(payload), "%d %s", status, info);
-        } else {
-            snprintf(payload, sizeof(payload), "%d", status);
-        }
+        StaticJsonDocument<384> doc;
+        doc[F("code")] = status;
+        if (info)
+            doc[F("message")] = info;
+        if (_new_version[0] != '\0')
+            doc[F("requestedVersion")] = _new_version;
+
+        char payload[384];
+        size_t payload_size = serializeJson(doc, payload, sizeof(payload));
+        if (payload_size == 0 || payload_size >= sizeof(payload))
+            return;
 
         char topic[128];
         snprintf(topic, sizeof(topic), "%sota/status", _mqtt_ota_header);
@@ -63,13 +70,13 @@ namespace OTA
     void _start_update()
     {
 #ifdef DEBUG
-        Serial.println(F("Starting OTA update"));
+        IOTCLOUD_LOG_PRINTLN(F("Starting OTA update"));
 #endif
 
         if (strcmp(_new_version, _current_version) == 0)
         {
 #ifdef DEBUG
-            Serial.println(F("The device has already been updated. Ignore update"));
+            IOTCLOUD_LOG_PRINTLN(F("The device has already been updated. Ignore update"));
 #endif
             _publishOtaStatus(400, "The device has already been updated. Ignore update");
             return;
@@ -100,10 +107,10 @@ namespace OTA
         snprintf(url, sizeof(url), "https://%s/%s/%s", IotCloud_Constants::OTA_SERVER, _device_model, _new_version);
 
 #ifdef ESP8266
-        ESPhttpUpdate.setLedPin(LED_BUILTIN, LOW);
+        ESPhttpUpdate.setLedPin(IOTCLOUD_LED_PIN, LOW);
         t_httpUpdate_return ret = ESPhttpUpdate.update(client, url);
 #elif defined(ARDUINO_ARCH_ESP32)
-        httpUpdate.setLedPin(LED_BUILTIN, LOW);
+        httpUpdate.setLedPin(IOTCLOUD_LED_PIN, LOW);
         t_httpUpdate_return ret = httpUpdate.update(client, url);
 #endif
 
@@ -118,7 +125,7 @@ namespace OTA
             snprintf(error_msg, sizeof(error_msg), "HTTP_UPDATE_FAILED Error (%d): %s\n", httpUpdate.getLastError(), httpUpdate.getLastErrorString().c_str());
 #endif
 #ifdef DEBUG
-            Serial.println(error_msg);
+            IOTCLOUD_LOG_PRINTLN(error_msg);
 #endif
             _publishOtaStatus(400, error_msg);
             break;
@@ -126,7 +133,7 @@ namespace OTA
         case HTTP_UPDATE_NO_UPDATES:
             strlcpy(error_msg, "HTTP_UPDATE_NO_UPDATES", sizeof(error_msg));
 #ifdef DEBUG
-            Serial.println(error_msg);
+            IOTCLOUD_LOG_PRINTLN(error_msg);
 #endif
             _publishOtaStatus(400, error_msg);
             break;
@@ -134,9 +141,11 @@ namespace OTA
         case HTTP_UPDATE_OK:
             strlcpy(error_msg, "Update finished successfully. Restarting...", sizeof(error_msg));
 #ifdef DEBUG
-            Serial.println(error_msg);
+            IOTCLOUD_LOG_PRINTLN(error_msg);
 #endif
             _publishOtaStatus(200, error_msg);
+            // Give the network stack time to send the status message before restarting
+            delay(500);
             ESP.restart();
             break;
         }

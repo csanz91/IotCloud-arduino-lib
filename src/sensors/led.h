@@ -18,7 +18,8 @@ public:
         const char *sensor_id,
         const char *sensor_name,
         const char *sensor_type = "led",
-        const char *metadata = "{}");
+        const char *metadata = "{}",
+        const char *sensor_sub_type = nullptr);
 
     void init(char *mqtt_header, EspMQTTClient *mqtt_client);
 };

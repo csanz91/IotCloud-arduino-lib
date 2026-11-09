@@ -3,12 +3,13 @@
 
 //#define DEBUG
 
-int currentState;
-unsigned long releasedTime = 0;
+// static: keep these generic names out of the global namespace
+static int currentState;
+static unsigned long releasedTime = 0;
 
-bool runtime_mode = false;
+static bool runtime_mode = false;
 
-void iotcloud_setup(Device *device)
+void iotcloud_setup(Device *device, unsigned long offline_restart_timeout_ms)
 {
     // Make sure the device passed is correct
     assert(device);
@@ -16,7 +17,7 @@ void iotcloud_setup(Device *device)
     IotCloud_Constants::setup_constants();
 
     // Set up the reset button pin
-    pinMode(RESET_PIN, INPUT);
+    pinMode(IOTCLOUD_RESET_PIN, IOTCLOUD_RESET_PIN_MODE);
 
     // Get the device data saved
     device_data data = get_data();
@@ -29,14 +30,14 @@ void iotcloud_setup(Device *device)
     if (runtime_mode)
     {
 #ifdef DEBUG
-        Serial.println(F("Starting runtime mode setup"));
+        IOTCLOUD_LOG_PRINTLN(F("Starting runtime mode setup"));
 #endif
-        runtime_mode_setup(&data, device);
+        runtime_mode_setup(&data, device, offline_restart_timeout_ms);
     }
     else
     {
 #ifdef DEBUG
-        Serial.println(F("Starting config mode setup"));
+        IOTCLOUD_LOG_PRINTLN(F("Starting config mode setup"));
 #endif
         config_mode_setup(device);
     }
@@ -59,7 +60,7 @@ void iotcloud_loop(void)
 
 void detect_reset_request()
 {
-    currentState = digitalRead(RESET_PIN);
+    currentState = digitalRead(IOTCLOUD_RESET_PIN);
 
     if (currentState == HIGH) // button is not pressed
         releasedTime = millis();
@@ -68,9 +69,9 @@ void detect_reset_request()
 
     if (pressDuration > RESET_PRESS_TIME)
     {
-        Serial.println(F("Resetting device..."));
+        IOTCLOUD_LOG_PRINTLN(F("Resetting device..."));
         clear_saved_data();
-        Serial.println(F("Restarting device..."));
+        IOTCLOUD_LOG_PRINTLN(F("Restarting device..."));
         ESP.restart();
     }
 

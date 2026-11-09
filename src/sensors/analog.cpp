@@ -8,10 +8,13 @@ AnalogSensor::AnalogSensor(
     const bool enable_filter,
     const char *sensor_type,
     const char *metadata,
-    const float filter_rate_change) : BaseSensor(sensor_id,
+    const float filter_rate_change,
+    const char *sensor_sub_type) : BaseSensor(sensor_id,
                                                  sensor_name,
                                                  sensor_type,
-                                                 metadata),
+                                                 metadata,
+                                                 "v0.4_arduino",
+                                                 sensor_sub_type),
                                       _report_value_period(report_value_period),
                                       _decimals(decimals),
                                       _enable_filter(enable_filter),
@@ -31,7 +34,10 @@ void AnalogSensor::init(char *mqtt_header, EspMQTTClient *mqtt_client)
     char constructedTopic[128] = "";
     construct_topic(constructedTopic, sizeof(constructedTopic), "aux/offset");
     mqtt_client->subscribe(constructedTopic, [&](const String &payload)
-                           { offset = payload.toFloat(); });
+                           {
+                               float new_offset = atof(payload.c_str());
+                               if (!isnan(new_offset) && !isinf(new_offset))
+                                   offset = new_offset; });
 }
 
 bool AnalogSensor::report_value()
@@ -46,8 +52,11 @@ bool AnalogSensor::report_value()
 
     char constructedTopic[128] = "";
     construct_topic(constructedTopic, sizeof(constructedTopic), "value");
-    char array[12];
-    dtostrf(value, 1, _decimals, array);
+    // dtostrf() does not check the buffer size and prints every integer digit.
+    // A finite float has at most 39 integer digits, so with the sign, the
+    // decimal point, up to 6 decimals and the terminator, 48 bytes always fit.
+    char array[48];
+    dtostrf(value, 1, _decimals > 6 ? 6 : _decimals, array);
     _mqtt_client->publish(constructedTopic, array, true);
     return true;
 }
@@ -65,7 +74,36 @@ float AnalogSensor::filter_value(float new_value)
     if (!_enable_filter)
         return new_value;
 
-    // Calculate the running average
+    if (_elements_in_buffer > 0)
+    {
+        float running_avg_value = 0;
+        for (int i = 0; i < _elements_in_buffer; ++i)
+        {
+            running_avg_value += _running_avg_buffer[i];
+        }
+        running_avg_value /= _elements_in_buffer;
+
+        // Maximum allowed change. fabsf() keeps the window valid for negative
+        // averages, and the floor stops it from collapsing near zero.
+        float avg_tolerance = fabsf(running_avg_value) * _filter_rate_change;
+        if (avg_tolerance < _filter_min_tolerance)
+            avg_tolerance = _filter_min_tolerance;
+
+        if (fabsf(new_value - running_avg_value) > avg_tolerance)
+        {
+            // Keep outliers out of the average so one glitch can't block the
+            // good readings that follow it.
+            if (++_consecutive_rejections < _filter_max_rejections)
+                return NAN;
+
+            // The value stayed out of range: treat it as a real change and
+            // restart the average from it.
+            _elements_in_buffer = 0;
+            _next_running_avg = 0;
+        }
+    }
+    _consecutive_rejections = 0;
+
     _running_avg_buffer[_next_running_avg++] = new_value;
     if (_next_running_avg >= _running_avg_count)
     {
@@ -75,18 +113,6 @@ float AnalogSensor::filter_value(float new_value)
     {
         _elements_in_buffer++;
     }
-    float running_avg_value = 0;
-    for (int i = 0; i < _elements_in_buffer; ++i)
-    {
-        running_avg_value += _running_avg_buffer[i];
-    }
-    running_avg_value /= _elements_in_buffer;
-    // Calculate the maximum allowed rate of change
-    float avg_tolerance = running_avg_value * _filter_rate_change;
-
-    // Check if the value is within the tolerances
-    if (new_value < running_avg_value - avg_tolerance || new_value > running_avg_value + avg_tolerance)
-        return NAN;
 
     return new_value;
 }

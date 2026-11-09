@@ -37,6 +37,7 @@ The IotCloud Arduino Library is a complete IoT firmware solution that provides:
 - **Multiple sensor types** support (analog, switch, LED, RGB, thermostat, toggle)
 - **Dual-platform support** for ESP8266 and ESP32 microcontrollers
 - **Persistent device configuration** stored in EEPROM
+- **Configurable JSON export buffers** for devices with larger sensor metadata
 - **Factory reset** via physical button (GPIO 0 / GPIO 9 for ESP32-C3)
 
 ## Features
@@ -201,14 +202,29 @@ void loop() {
 
 ### Core Functions
 
-#### `iotcloud_setup(Device *device)`
-Initializes the IotCloud library with the given device configuration.
+#### `iotcloud_setup(Device *device, unsigned long offline_restart_timeout_ms = 0)`
+Initializes the IotCloud library with the given device configuration. By
+default, connectivity loss never restarts the device. Set
+`offline_restart_timeout_ms` to opt into a restart after WiFi/MQTT connectivity
+has remained unavailable continuously for that duration.
+
+Only enable offline restart for devices where rebooting cannot cause unsafe or
+surprising local state changes. For example, a locally controlled light should
+normally leave it disabled so an Internet outage does not turn the light off.
 
 ```cpp
+// Must be global (or static): the library keeps a pointer to it
+Device device("1.0.0", "my_model");
+
 void setup() {
-    Device device("1.0.0", "my_model");
     iotcloud_setup(&device);
 }
+```
+
+For a device that can safely restart while offline, opt in with a timeout:
+
+```cpp
+iotcloud_setup(&device, 15UL * 60UL * 1000UL);
 ```
 
 #### `iotcloud_loop()`
@@ -253,9 +269,22 @@ BaseSensor(
     const char *sensor_id,      // Unique sensor identifier
     const char *sensor_name,    // Human-readable name
     const char *sensor_type,    // Sensor type string
-    const char *metadata = "{}" // Additional JSON metadata
+    const char *metadata = "{}",// Additional JSON metadata
+    const char *version = "v0.4_arduino",
+    const char *sensor_sub_type = nullptr // Optional subtype exported as sensorSubType
 );
 ```
+
+Sensors export `sensorType` and can optionally export `sensorSubType`. For example, a blinds control should keep `sensorType` as `"toggle"` and set `sensorSubType` to `"blinds"`.
+
+If a device needs larger setup metadata payloads, increase the setup export buffer sizes, either as build flags (`-DIOTCLOUD_DEVICE_EXPORT_JSON_SIZE=8192`) or in `src/IotCloud_config.h`:
+
+```cpp
+#define IOTCLOUD_SENSOR_EXPORT_JSON_SIZE 1024
+#define IOTCLOUD_DEVICE_EXPORT_JSON_SIZE 4096
+```
+
+Larger values use more heap while setup mode exports device info.
 
 #### AnalogSensor
 
@@ -270,7 +299,8 @@ AnalogSensor(
     const bool enable_filter = true,                 // enable smoothing
     const char *sensor_type = "analog",
     const char *metadata = "{}",
-    const float filter_rate_change = 0.1            // max rate of change
+    const float filter_rate_change = 0.1,            // max rate of change
+    const char *sensor_sub_type = nullptr
 );
 ```
 
@@ -295,7 +325,8 @@ SwitchSensor(
     const char *sensor_id,
     const char *sensor_name,
     const char *sensor_type = "switch",
-    const char *metadata = "{}"
+    const char *metadata = "{}",
+    const char *sensor_sub_type = nullptr
 );
 ```
 
@@ -314,7 +345,8 @@ LedSensor(
     const char *sensor_id,
     const char *sensor_name,
     const char *sensor_type = "led",
-    const char *metadata = "{}"
+    const char *metadata = "{}",
+    const char *sensor_sub_type = nullptr
 );
 ```
 
@@ -334,7 +366,8 @@ Extends LedSensor with color control:
 ```cpp
 RgbSensor(
     const char *sensor_id,
-    const char *sensor_name
+    const char *sensor_name,
+    const char *sensor_sub_type = nullptr
 );
 ```
 
@@ -357,7 +390,8 @@ Thermostat(
     const bool enable_filter = true,
     const char *sensor_type = "thermostat",
     const char *metadata = "{}",
-    const float filter_rate_change = 0.1
+    const float filter_rate_change = 0.1,
+    const char *sensor_sub_type = nullptr
 );
 ```
 
@@ -375,11 +409,21 @@ Thermostat(
 For tri-state toggle controls (blinds, curtains, etc.):
 
 ```cpp
-Toogle(  // Note: typo in original code
+Toggle(
     const char *sensor_id,
     const char *sensor_name,
-    const char *metadata = "{}"
+    const char *metadata = "{}",
+    const char *sensor_sub_type = nullptr
 );
+```
+
+Example for blinds:
+
+```cpp
+class Blinds : public Toggle {
+public:
+    Blinds(const char *id, const char *name) : Toggle(id, name, "{}", "blinds") {}
+};
 ```
 
 **Subscribes to:**
@@ -433,10 +477,13 @@ Once configured, the device operates in **Runtime Mode**:
 | `v1/{locationId}/{deviceId}/status` | Publish | Device online status |
 | `v1/{locationId}/{deviceId}/ip` | Publish | Device IP address |
 | `v1/{locationId}/{deviceId}/version` | Publish | Firmware version |
+| `v1/{locationId}/{deviceId}/lib_version` | Publish | IotCloud library version |
 | `v1/{locationId}/{deviceId}/model` | Publish | Device model |
+| `v1/{locationId}/{deviceId}/reboot_reason` | Publish | Last platform reboot reason |
+| `v1/{locationId}/{deviceId}/ota/status` | Publish | OTA result as structured JSON |
 | `v1/{locationId}/{deviceId}/reset` | Subscribe | Factory reset command |
 | `v1/{locationId}/{deviceId}/restart` | Subscribe | Restart command |
-| `v1/{locationId}/{deviceId}/network` | Subscribe | Update WiFi credentials and restart |
+| `v1/{locationId}/{deviceId}/network` | Subscribe | Update WiFi credentials (see below) |
 
 Network update payload:
 
@@ -446,6 +493,15 @@ Network update payload:
     "wifiPassword": "new_wifi_password"
 }
 ```
+
+The device saves the new credentials and restarts, but keeps the previous ones
+as a fallback until the new ones reach the broker. Until then it switches
+between the two sets, without restarting, whenever one of them stays offline for
+`IOTCLOUD_NETWORK_FALLBACK_TIMEOUT_MS` (3 minutes by default). This means
+credentials can be sent before the new network exists (for example, before
+changing the router password), and a mistyped password doesn't strand the
+device. Sending the credentials it already uses is ignored, so a retained
+message doesn't cause a restart loop.
 
 ## OTA Updates
 
@@ -462,6 +518,20 @@ Over-The-Air updates are performed securely over HTTPS:
 3. If different, downloads from `https://ota.iotcloud.es/{model}/{version}`
 4. LED indicates download progress
 5. Device restarts with new firmware
+
+OTA status messages are non-retained JSON payloads. `requestedVersion` identifies
+the release that produced the status:
+
+```json
+{
+  "code": 200,
+  "message": "Update finished successfully. Restarting...",
+  "requestedVersion": "v1.0.10"
+}
+```
+
+The backend also accepts the legacy `<code> <message>` format from older library
+versions.
 
 ### Disable OTA
 
@@ -511,6 +581,7 @@ Located in `iotcloud_constants.h`:
 | `AP_PASSWORD` | `12345678` | Access point password |
 | `OTA_SERVER` | `ota.iotcloud.es` | OTA server hostname |
 | `NTP_SERVER` | `pool.ntp.org` | NTP server |
+| `LIB_VERSION` | `1.0.0` | Library version (published via MQTT) |
 | `ENABLE_OTA` | `true` | Enable/disable OTA updates |
 
 ## Examples
@@ -605,7 +676,7 @@ void loop() {
 - Verify token is valid
 - Check MQTT server connectivity
 - Ensure device ID is unique
-- Review debug output (enable `#define DEBUG`)
+- Review debug output (build with `-DDEBUG`, see below)
 
 ### OTA Update Fails
 - Check device model matches OTA topic
@@ -615,17 +686,53 @@ void loop() {
 
 ### Enable Debug Mode
 
-Add before including the library:
-```cpp
-#define DEBUG
-#include <iotcloud.h>
+Set `DEBUG` as a build flag. A `#define DEBUG` in your sketch only affects the
+sketch, because the library's source files are compiled separately.
+
+```ini
+; platformio.ini
+build_flags = -DDEBUG
 ```
+
+With the Arduino IDE, add `#define DEBUG` at the top of `src/IotCloud_config.h`.
 
 This enables Serial output for:
 - Configuration data
 - MQTT connection status
 - OTA update progress
 - Sensor value changes
+
+### Disable Library Serial Logging
+
+To remove all serial logging emitted by IotCloud, set
+`IOTCLOUD_DISABLE_SERIAL_LOGGING` (see below for where):
+
+This suppresses both `DEBUG` output and the library's unconditional diagnostic
+messages, including the serial diagnostics enabled through EspMQTTClient. It
+does not disable `Serial` calls made by the application or messages emitted by
+the ESP bootloader during reset.
+
+Arduino compiles library source files separately from the sketch. For Arduino
+IDE builds, uncomment the option in `src/IotCloud_config.h`; for PlatformIO or
+another build system, pass `-DIOTCLOUD_DISABLE_SERIAL_LOGGING` as a compiler
+build flag so it is applied to the library sources as well.
+
+## Releasing a New Version
+
+The library version is defined in **two places** that must be updated together:
+
+| File | Field |
+|------|-------|
+| `library.properties` | `version=X.Y.Z` (line 2) |
+| `src/iotcloud_constants.cpp` | `IotCloud_Constants::LIB_VERSION[] = "X.Y.Z"` |
+
+When cutting a release:
+
+1. Bump the version string in both files to the same value
+2. Commit the change (e.g., `Bump library version to 1.1.0`)
+3. Tag the commit (`git tag v1.1.0`)
+
+The library version is published automatically by every device at boot on the MQTT topic `v1/{locationId}/{deviceId}/lib_version` and included in the JSON export from `/getDeviceInfo` as `libVersion`. This is separate from the device firmware version passed to the `Device` constructor.
 
 ## Contributing
 

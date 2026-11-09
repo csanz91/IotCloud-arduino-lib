@@ -12,6 +12,10 @@ private:
     float _running_avg_buffer[_running_avg_count];
     int _next_running_avg = 0;
     int _elements_in_buffer = 0;
+    // Readings in a row outside the tolerance before the filter accepts them
+    // as a real change instead of a glitch.
+    static const int _filter_max_rejections = 3;
+    int _consecutive_rejections = 0;
     bool _enable_filter;
     const unsigned int _report_value_period;
     const float _filter_rate_change;
@@ -20,6 +24,9 @@ protected:
     float value;
     float offset;
     const unsigned short _decimals;
+    // Smallest allowed change between readings, in the sensor's units, so the
+    // filter still accepts small changes when the average is close to zero.
+    float _filter_min_tolerance = 0.5;
     virtual void get_value();
     float filter_value(float);
     virtual bool set_value(float);
@@ -34,7 +41,8 @@ public:
         const bool enable_filter = true,
         const char *sensor_type = "analog",
         const char *metadata = "{}",
-        const float filter_rate_change = 0.1);
+        const float filter_rate_change = 0.1,
+        const char *sensor_sub_type = nullptr);
 
     void loop();
     void init(char *mqtt_header, EspMQTTClient *mqtt_client);

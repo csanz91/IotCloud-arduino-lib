@@ -10,6 +10,7 @@
 #include <WiFi.h>
 #endif
 
+#include "../IotCloud_config.h"
 #include "../iotcloud_constants.h"
 #include "web_server.h"
 #include "../device.h"

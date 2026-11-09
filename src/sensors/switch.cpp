@@ -4,10 +4,13 @@ SwitchSensor::SwitchSensor(
     const char *sensor_id,
     const char *sensor_name,
     const char *sensor_type,
-    const char *metadata) : BaseSensor(sensor_id,
-                                       sensor_name,
-                                       sensor_type,
-                                       metadata)
+    const char *metadata,
+    const char *sensor_sub_type) : BaseSensor(sensor_id,
+                                              sensor_name,
+                                              sensor_type,
+                                              metadata,
+                                              "v0.4_arduino",
+                                              sensor_sub_type)
 {
 }
 
@@ -36,7 +39,7 @@ void SwitchSensor::init(char *mqtt_header, EspMQTTClient *mqtt_client)
     mqtt_client->subscribe(constructedTopic, [&](const String &payload)
                            {
 #ifdef DEBUG
-                               Serial.println("New state received");
+                               IOTCLOUD_LOG_PRINTLN("New state received");
 #endif
                                set_state(payload.equalsIgnoreCase("true")); });
 

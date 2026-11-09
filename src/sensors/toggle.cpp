@@ -3,10 +3,13 @@
 Toggle::Toggle(
     const char *sensor_id,
     const char *sensor_name,
-    const char *metadata) : BaseSensor(sensor_id,
-                                       sensor_name,
-                                       "toggle",
-                                       metadata)
+    const char *metadata,
+    const char *sensor_sub_type) : BaseSensor(sensor_id,
+                                              sensor_name,
+                                              "toggle",
+                                              metadata,
+                                              "v0.4_arduino",
+                                              sensor_sub_type)
 {
 }
 
@@ -15,11 +18,10 @@ void Toggle::init(char *mqtt_header, EspMQTTClient *mqtt_client)
     BaseSensor::init(mqtt_header, mqtt_client);
 
     char constructedTopic[128] = "";
-    // Lets keep backwards compatibility with "toogle" typo in topic
-    construct_topic(constructedTopic, sizeof(constructedTopic), "aux/setToogle");
+    construct_topic(constructedTopic, sizeof(constructedTopic), "aux/setToggle");
     mqtt_client->subscribe(constructedTopic, [&](const String &payload)
                            {
-                               if (payload.equals("toogle") || payload.equals("toggle"))
+                               if (payload.equals("toggle"))
                                {
                                    set_toggle_state(ToggleState::TOGGLE);
                                }

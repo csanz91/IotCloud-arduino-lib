@@ -15,8 +15,9 @@
 #include "iotcloud_constants.h"
 #include "ota.h"
 
-extern void runtime_mode_setup(const device_data *data, Device *d);
+extern void runtime_mode_setup(const device_data *data, Device *d, unsigned long restart_timeout_ms);
 extern void runtime_mode_loop();
+extern void runtime_mode_network_update(const char *ssid, const char *password);
 void wifi_connect();
 
 #endif // _IOTCLOUD_RUNTIME_MODE

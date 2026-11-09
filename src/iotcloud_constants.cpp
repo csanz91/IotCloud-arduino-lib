@@ -12,17 +12,38 @@ const char IotCloud_Constants::AP_PASSWORD[] = "12345678";
 const char IotCloud_Constants::MQTT_SERVER[] = "mqtt.iotcloud.es";
 const char IotCloud_Constants::OTA_SERVER[] = "ota.iotcloud.es";
 const char IotCloud_Constants::NTP_SERVER[] = "pool.ntp.org";
+const char IotCloud_Constants::LIB_VERSION[] = "1.1.0";
 char IotCloud_Constants::AP_SSID[9] = "";
 char IotCloud_Constants::DEVICE_INTERNAL_ID[14] = "";
 bool IotCloud_Constants::ENABLE_OTA = true;
 
 void IotCloud_Constants::setup_constants()
 {
+#ifdef ARDUINO_ARCH_ESP32
+    uint64_t efuse_mac = ESP.getEfuseMac();
+    byte mac[6] = {
+        static_cast<byte>((efuse_mac >> 40) & 0xFF),
+        static_cast<byte>((efuse_mac >> 32) & 0xFF),
+        static_cast<byte>((efuse_mac >> 24) & 0xFF),
+        static_cast<byte>((efuse_mac >> 16) & 0xFF),
+        static_cast<byte>((efuse_mac >> 8) & 0xFF),
+        static_cast<byte>(efuse_mac & 0xFF),
+    };
+#else
     byte mac[6];
     WiFi.macAddress(mac);
+#endif
     // Set up device ID
     snprintf(IotCloud_Constants::DEVICE_INTERNAL_ID, sizeof(IotCloud_Constants::DEVICE_INTERNAL_ID), "%02x%02x%02x%02x-%02x%02x", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
 
-    // Set up config mode Wifi SSID
+    // Set up config mode Wifi SSID from the last two bytes of the real MAC,
+    // which differ between boards.
+#ifdef ARDUINO_ARCH_ESP32
+    // getEfuseMac() returns the bytes in reverse order, so mac[] above is
+    // reversed: mac[1] and mac[0] are the real last two bytes. DEVICE_INTERNAL_ID
+    // keeps the reversed order on purpose, since existing sensor IDs depend on it.
+    snprintf(IotCloud_Constants::AP_SSID, sizeof(IotCloud_Constants::AP_SSID), "%s_%02x%02x", IotCloud_Constants::AP_SSID_PREFIX, mac[1], mac[0]);
+#else
     snprintf(IotCloud_Constants::AP_SSID, sizeof(IotCloud_Constants::AP_SSID), "%s_%02x%02x", IotCloud_Constants::AP_SSID_PREFIX, mac[4], mac[5]);
+#endif
 }

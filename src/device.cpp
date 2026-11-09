@@ -1,14 +1,13 @@
 #include <ArduinoJson.h>
 
+#include "IotCloud_config.h"
 #include "device.h"
+#include "runtime_mode.h"
 
 Device::Device(
     const char *device_current_version,
     const char *device_model) : device_current_version(device_current_version), device_model(device_model)
 {
-    if (IotCloud_Constants::DEVICE_INTERNAL_ID[0] == '\0')
-        IotCloud_Constants::setup_constants();
-
     _deviceInternalId = IotCloud_Constants::DEVICE_INTERNAL_ID;
     mqtt_header[0] = '\0';
     mqtt_status_topic[0] = '\0';
@@ -29,12 +28,38 @@ void Device::init(EspMQTTClient *mqtt_client)
     get_topic(topic, sizeof(topic), "model");
     mqtt_client->publish(topic, device_model, true);
 
+    get_topic(topic, sizeof(topic), "lib_version");
+    mqtt_client->publish(topic, IotCloud_Constants::LIB_VERSION, true);
+
+    get_topic(topic, sizeof(topic), "reboot_reason");
+#ifdef ESP8266
+    mqtt_client->publish(topic, ESP.getResetReason(), true);
+#elif defined(ARDUINO_ARCH_ESP32)
+    {
+        const char *reset_reason;
+        switch (esp_reset_reason())
+        {
+        case ESP_RST_POWERON:   reset_reason = "Power On";           break;
+        case ESP_RST_EXT:       reset_reason = "External Pin";       break;
+        case ESP_RST_SW:        reset_reason = "Software Restart";   break;
+        case ESP_RST_PANIC:     reset_reason = "Exception/Panic";    break;
+        case ESP_RST_INT_WDT:   reset_reason = "Interrupt Watchdog"; break;
+        case ESP_RST_TASK_WDT:  reset_reason = "Task Watchdog";      break;
+        case ESP_RST_WDT:       reset_reason = "Watchdog";           break;
+        case ESP_RST_DEEPSLEEP: reset_reason = "Deep Sleep Wake";    break;
+        case ESP_RST_BROWNOUT:  reset_reason = "Brownout";           break;
+        default:                reset_reason = "Unknown";            break;
+        }
+        mqtt_client->publish(topic, reset_reason, true);
+    }
+#endif
+
     get_topic(topic, sizeof(topic), "reset");
     mqtt_client->subscribe(topic, [&](const String &payload) {
         if (payload.equalsIgnoreCase("true"))
         {
 #ifdef DEBUG
-            Serial.println(F("Reseting the device..."));
+            IOTCLOUD_LOG_PRINTLN(F("Reseting the device..."));
 #endif
             clear_saved_data();
             ESP.restart();
@@ -56,8 +81,8 @@ void Device::init(EspMQTTClient *mqtt_client)
         if (err)
         {
 #ifdef DEBUG
-            Serial.print(F("Network config JSON parse failed: "));
-            Serial.println(err.c_str());
+            IOTCLOUD_LOG_PRINT(F("Network config JSON parse failed: "));
+            IOTCLOUD_LOG_PRINTLN(err.c_str());
 #endif
             return;
         }
@@ -65,41 +90,13 @@ void Device::init(EspMQTTClient *mqtt_client)
         if (!doc["wifiSSID"].is<const char *>() || !doc["wifiPassword"].is<const char *>())
         {
 #ifdef DEBUG
-            Serial.println(F("Network config payload missing wifiSSID or wifiPassword"));
+            IOTCLOUD_LOG_PRINTLN(F("Network config payload missing wifiSSID or wifiPassword"));
 #endif
             return;
         }
 
-        const char *wifiSSID = doc["wifiSSID"];
-        const char *wifiPassword = doc["wifiPassword"];
-        device_data data = get_data();
-
-        if (strlcpy(data.wifiSSID, wifiSSID, WIFI_SSID_MAX_SIZE) >= WIFI_SSID_MAX_SIZE)
-        {
-#ifdef DEBUG
-            Serial.println(F("wifiSSID length is too big"));
-#endif
-            return;
-        }
-
-        if (strlcpy(data.wifiPassword, wifiPassword, WIFI_PASSWORD_MAX_SIZE) >= WIFI_PASSWORD_MAX_SIZE)
-        {
-#ifdef DEBUG
-            Serial.println(F("wifiPassword length is too big"));
-#endif
-            return;
-        }
-
-        if (!validate_device_data(&data))
-        {
-#ifdef DEBUG
-            Serial.println(F("Network config data is not valid"));
-#endif
-            return;
-        }
-
-        save_data(&data);
-        ESP.restart();
+        // Validates, keeps the current credentials as a fallback, saves and restarts
+        runtime_mode_network_update(doc["wifiSSID"], doc["wifiPassword"]);
     });
 
     for (const auto &sensor : _sensors)
@@ -110,24 +107,34 @@ void Device::init(EspMQTTClient *mqtt_client)
 
 void Device::export_data(char *exported_data)
 {
+    export_data(exported_data, IOTCLOUD_DEVICE_EXPORT_JSON_SIZE);
+}
 
-    const int jsonDocumentMaxSize = 1024;
-
-    StaticJsonDocument<jsonDocumentMaxSize> doc;
+bool Device::export_data(char *exported_data, size_t size)
+{
+    DynamicJsonDocument doc(size);
 
     doc[F("deviceInternalId")] = _deviceInternalId;
     doc[F("deviceVersion")] = device_current_version;
+    doc[F("libVersion")] = IotCloud_Constants::LIB_VERSION;
     JsonArray json_sensors = doc.createNestedArray("sensors");
 
     for (const auto &sensor : _sensors)
     {
-        char sensor_exported_data[512];
-        sensor->export_data(sensor_exported_data);
-        json_sensors.add(serialized(sensor_exported_data));
+        JsonObject sensor_data = json_sensors.createNestedObject();
+        sensor->add_export_data(sensor_data);
     }
-    size_t len = serializeJson(doc, exported_data, jsonDocumentMaxSize);
-    assert(len < jsonDocumentMaxSize);
+    if (doc.overflowed())
+    {
+        doc.clear();
+        return false;
+    }
+
+    size_t len = serializeJson(doc, exported_data, size);
+    bool exported = len < size;
+    assert(exported);
     doc.clear();
+    return exported;
 }
 
 void Device::get_topic(char *topic, size_t size, const char *endpoint)
