@@ -479,7 +479,8 @@ Once configured, the device operates in **Runtime Mode**:
 | `v1/{locationId}/{deviceId}/version` | Publish | Firmware version |
 | `v1/{locationId}/{deviceId}/lib_version` | Publish | IotCloud library version |
 | `v1/{locationId}/{deviceId}/model` | Publish | Device model |
-| `v1/{locationId}/{deviceId}/reboot_reason` | Publish | Last platform reboot reason |
+| `v1/{locationId}/{deviceId}/reboot_reason` | Publish | Last platform reboot reason, sent again on every connect |
+| `v1/{locationId}/{deviceId}/health` | Publish | `{"uptime":s,"rssi":dBm,"freeHeap":bytes,"connects":n}` (`connects` = MQTT connects since boot) on every connect and every `IOTCLOUD_HEALTH_REPORT_PERIOD_MS` (5 min) |
 | `v1/{locationId}/{deviceId}/ota/status` | Publish | OTA result as structured JSON |
 | `v1/{locationId}/{deviceId}/reset` | Subscribe | Factory reset command |
 | `v1/{locationId}/{deviceId}/restart` | Subscribe | Restart command |

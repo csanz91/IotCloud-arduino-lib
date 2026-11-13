@@ -15,6 +15,8 @@ Device::Device(
 
 void Device::init(EspMQTTClient *mqtt_client)
 {
+    _mqtt_client = mqtt_client;
+    _connect_count++;
 
     mqtt_client->publish(mqtt_status_topic, "online", true);
 
@@ -53,6 +55,10 @@ void Device::init(EspMQTTClient *mqtt_client)
         mqtt_client->publish(topic, reset_reason, true);
     }
 #endif
+
+    // Sent on every connect: a small uptime means the device rebooted, a large
+    // one that it only reconnected.
+    publish_health();
 
     get_topic(topic, sizeof(topic), "reset");
     mqtt_client->subscribe(topic, [&](const String &payload) {
@@ -142,11 +148,41 @@ void Device::get_topic(char *topic, size_t size, const char *endpoint)
     snprintf(topic, size, "%s%s", mqtt_header, endpoint);
 }
 
+void Device::publish_health()
+{
+    // 64-bit timers, so uptime doesn't wrap after 49 days like millis()
+#ifdef ESP8266
+    const uint64_t uptime_s = micros64() / 1000000ULL;
+#elif defined(ARDUINO_ARCH_ESP32)
+    const uint64_t uptime_s = static_cast<uint64_t>(esp_timer_get_time()) / 1000000ULL;
+#endif
+
+    char payload[128];
+    snprintf(payload, sizeof(payload), "{\"uptime\":%llu,\"rssi\":%d,\"freeHeap\":%lu,\"connects\":%lu}",
+             static_cast<unsigned long long>(uptime_s),
+             static_cast<int>(WiFi.RSSI()),
+             static_cast<unsigned long>(ESP.getFreeHeap()),
+             static_cast<unsigned long>(_connect_count));
+
+    char topic[128];
+    get_topic(topic, sizeof(topic), "health");
+    _mqtt_client->publish(topic, payload);
+    _last_health_report_ms = millis();
+}
+
 void Device::loop()
 {
     for (const auto &sensor : _sensors)
     {
         sensor->loop();
+    }
+
+    if (IOTCLOUD_HEALTH_REPORT_PERIOD_MS > 0 &&
+        _mqtt_client != nullptr &&
+        _mqtt_client->isConnected() &&
+        millis() - _last_health_report_ms >= IOTCLOUD_HEALTH_REPORT_PERIOD_MS)
+    {
+        publish_health();
     }
 }
 

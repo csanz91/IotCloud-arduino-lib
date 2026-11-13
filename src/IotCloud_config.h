@@ -49,6 +49,13 @@
 #define IOTCLOUD_NETWORK_FALLBACK_TIMEOUT_MS 180000UL
 #endif
 
+// --- Health report ---
+// The device publishes uptime, Wi-Fi RSSI and free heap to the "health" topic
+// on every MQTT connect and then every this many ms. 0 publishes only on connect.
+#ifndef IOTCLOUD_HEALTH_REPORT_PERIOD_MS
+#define IOTCLOUD_HEALTH_REPORT_PERIOD_MS 300000UL // 5 minutes
+#endif
+
 // --- Thermostat ---
 // Turn heating off when the thermostat has been offline this long while
 // heating, since only the cloud can turn it off otherwise. 0 disables it.

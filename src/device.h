@@ -19,6 +19,11 @@ class Device
 private:
     const char *_deviceInternalId;
     std::vector<BaseSensor *> _sensors;
+    EspMQTTClient *_mqtt_client = nullptr;
+    unsigned long _last_health_report_ms = 0;
+    uint32_t _connect_count = 0; // MQTT connects since boot, kept in RAM only
+
+    void publish_health();
 
 public:
     Device(
