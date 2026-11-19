@@ -56,6 +56,19 @@
 #define IOTCLOUD_HEALTH_REPORT_PERIOD_MS 300000UL // 5 minutes
 #endif
 
+// --- OTA rollback (ESP32) ---
+// A new OTA image stays "pending" until MQTT has stayed connected this long
+// (and the project's OTA::set_health_check, if any, passes). If it isn't
+// confirmed by the deadline, or the device reboots first, the bootloader goes
+// back to the previous image.
+#ifndef IOTCLOUD_OTA_CONFIRM_AFTER_MS
+#define IOTCLOUD_OTA_CONFIRM_AFTER_MS 60000UL // 1 minute
+#endif
+
+#ifndef IOTCLOUD_OTA_CONFIRM_DEADLINE_MS
+#define IOTCLOUD_OTA_CONFIRM_DEADLINE_MS 600000UL // 10 minutes after boot
+#endif
+
 // --- Thermostat ---
 // Turn heating off when the thermostat has been offline this long while
 // heating, since only the cloud can turn it off otherwise. 0 disables it.
