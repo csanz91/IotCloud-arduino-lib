@@ -1,0 +1,33 @@
+{
+  "name": "IotCloud",
+  "version": "1.3.0",
+  "description": "IotCloud platform firmware.",
+  "keywords": ["iot", "mqtt", "ota"],
+  "authors": [
+    {
+      "name": "Cesar Sanz",
+      "maintainer": true
+    }
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/csanz91/IotCloud-arduino-lib.git"
+  },
+  "frameworks": "arduino",
+  "platforms": ["espressif8266", "espressif32"],
+  "headers": "iotcloud.h",
+  "build": {
+    "libArchive": true
+  },
+  "dependencies": [
+    {
+      "name": "EspMQTTClient",
+      "version": "https://github.com/csanz91/EspMQTTClient.git#3196a2323907437e958cf4f6ae59b1190005e237"
+    },
+    {
+      "owner": "bblanchon",
+      "name": "ArduinoJson",
+      "version": "^7.4.2"
+    }
+  ]
+}
